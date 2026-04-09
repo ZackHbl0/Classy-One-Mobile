@@ -3,12 +3,14 @@ class Student {
   final String matricule;
   final String nom;
   final String prenom;
+  final String telephone;
 
   Student({
     required this.idStudent,
     required this.matricule,
     required this.nom,
     required this.prenom,
+    required this.telephone,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class Student {
       matricule: json['matricule'] ?? '',
       nom: json['nom'] ?? '',
       prenom: json['prenom'] ?? '',
+      telephone: json['telephone'] ?? '',
     );
   }
 
@@ -28,6 +31,7 @@ class Student {
       'matricule': matricule,
       'nom': nom,
       'prenom': prenom,
+      'telephone': telephone,
     };
   }
 }

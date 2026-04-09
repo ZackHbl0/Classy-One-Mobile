@@ -1,24 +1,43 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import '../models/student.dart';
 
 class AuthService {
-  // Use your local IP or appropriate testing server URL.
-  // For android emulator, 'http://10.0.2.2/OSBT_notif' is typical.
-  // For physical device, use your machine's local IP on the network (e.g. 'http://192.168.1.100/OSBT_notif').
-  static const String baseUrl = 'http://192.168.0.33/OSBT_notif';
+  // Update to the new Laravel API path
+        static const String baseUrl = "http://192.168.100.55/osbt-api/public/api";  
+
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    return {
+      'Content-Type': 'application/json', 
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<Map<String, dynamic>> login(
     String matricule,
     String password, {
     String fcmToken = '',
   }) async {
-    final url = Uri.parse('$baseUrl/login.php');
+    if (fcmToken.isEmpty) {
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
+      } catch (e) {
+        debugPrint('Erreur FCM: $e');
+      }
+    }
+
+    final url = Uri.parse('$baseUrl/login'); // Laravel route
 
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: jsonEncode({
           'matricule': matricule,
           'password': password,
@@ -29,29 +48,32 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Wrap the response in our own result map including the model
-        if (data['success'] == true && data['data'] != null) {
+        // Laravel auth returns status 'success' (string) or success true
+        if (data['status'] == 'success' || data['success'] == true) {
+          // Save Sanctum token
+          final prefs = await SharedPreferences.getInstance();
+          if (data['token'] != null) {
+            await prefs.setString('auth_token', data['token']);
+          }
+
           return {
             'success': true,
             'message': data['message'],
-            'student': Student.fromJson(data['data']),
+            'student': Student.fromJson(data['student'] ?? data['data']),
           };
         }
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       } else {
-        // Handle non-200 responses safely
         try {
           final errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message':
-                errorData['message'] ?? 'Server error: ${response.statusCode}',
+            'message': errorData['message'] ?? 'Server error: ${response.statusCode}',
           };
         } catch (e) {
           return {
             'success': false,
-            'message':
-                'Server returned an invalid response. Status: ${response.statusCode}',
+            'message': 'Server returned an invalid response. Status: ${response.statusCode}',
           };
         }
       }
@@ -66,30 +88,46 @@ class AuthService {
     String prenom,
     String password, {
     String fcmToken = '',
+    String telephone = '',
   }) async {
-    final url = Uri.parse('$baseUrl/register.php');
+    if (fcmToken.isEmpty) {
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
+      } catch (e) {
+        debugPrint('Erreur FCM: $e');
+      }
+    }
+
+    final url = Uri.parse('$baseUrl/register');
 
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: jsonEncode({
           'matricule': matricule,
           'nom': nom,
           'prenom': prenom,
           'password': password,
           'fcmToken': fcmToken,
+          'telephone': telephone,
         }),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['success'] == true && data['data'] != null) {
+        if (data['status'] == 'success' || data['success'] == true) {
+          // Save Sanctum token
+          final prefs = await SharedPreferences.getInstance();
+          if (data['token'] != null) {
+            await prefs.setString('auth_token', data['token']);
+          }
+
           return {
             'success': true,
             'message': data['message'] ?? 'Registration successful',
-            'student': Student.fromJson(data['data']),
+            'student': Student.fromJson(data['student'] ?? data['data']),
           };
         }
         return {
@@ -99,16 +137,20 @@ class AuthService {
       } else {
         try {
           final errorData = jsonDecode(response.body);
+          // Handle Laravel validation errors nicely if present
+          String errMsg = errorData['message'] ?? 'Server error: ${response.statusCode}';
+          if (errorData['errors'] != null) {
+            final errors = errorData['errors'] as Map<String, dynamic>;
+            errMsg = errors.values.first[0]; // Get first validation error
+          }
           return {
             'success': false,
-            'message':
-                errorData['message'] ?? 'Server error: ${response.statusCode}',
+            'message': errMsg,
           };
         } catch (e) {
           return {
             'success': false,
-            'message':
-                'Server returned an invalid response. Status: ${response.statusCode}',
+            'message': 'Server returned an invalid response. Status: ${response.statusCode}',
           };
         }
       }
@@ -117,14 +159,28 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> getDashboardData(int idStudent) async {
-    final url = Uri.parse('$baseUrl/get_dashboard_data.php');
-
+  Future<void> logout() async {
+    final url = Uri.parse('$baseUrl/logout');
     try {
+      final headers = await _getHeaders();
+      await http.post(url, headers: headers);
+    } catch (e) {
+      // Ignore network errors on logout, just clear locally
+    }
+    
+    // Always clear the token locally
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+  }
+
+  Future<Map<String, dynamic>> getDashboardData(int idStudent) async {
+    final url = Uri.parse('$baseUrl/dashboard');
+    try {
+      final headers = await _getHeaders();
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idStudent': idStudent}),
+        headers: headers,
+        body: jsonEncode({}), // idStudent is no longer needed but backend ignores it anyway
       );
 
       if (response.statusCode == 200) {
@@ -136,11 +192,10 @@ class AuthService {
           'success': false,
           'message': data['message'] ?? 'Failed to load data',
         };
+      } else if (response.statusCode == 401) {
+         return {'success': false, 'message': 'Session expired'};
       } else {
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
+         return {'success': false, 'message': 'Error: ${response.statusCode}'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
@@ -148,30 +203,219 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> getNotifications(int idStudent) async {
-    final url = Uri.parse('$baseUrl/get_notifications.php');
-
+    final url = Uri.parse('$baseUrl/notifications');
     try {
+      final headers = await _getHeaders();
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idStudent': idStudent}),
+        headers: headers,
+        body: jsonEncode({}),
       );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          return {'success': true, 'data': data['data']};
-        }
+  Future<Map<String, dynamic>> getEvenements(int idStudent, {String category = 'Tout'}) async {
+    final url = Uri.parse('$baseUrl/events');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'category': category}),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getPlanning(int idStudent) async {
+    final url = Uri.parse('$baseUrl/planning');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      if (response.statusCode == 200) return jsonDecode(response.body);
+
+      try {
+        final errorData = jsonDecode(response.body);
         return {
           'success': false,
-          'message': data['message'] ?? 'Failed to load notifications',
+          'message': errorData['message'] ?? 'Error: ${response.statusCode}',
         };
-      } else {
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
+      } catch (e) {
+        return {'success': false, 'message': 'Error: ${response.statusCode}'};
       }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaiement(int idStudent) async {
+    final url = Uri.parse('$baseUrl/paiement');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      try {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Error: ${response.statusCode}',
+        };
+      } catch (e) {
+        return {'success': false, 'message': 'Error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePassword(
+    int idStudent,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final url = Uri.parse('$baseUrl/profile/update-password');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePhone(
+    int idStudent,
+    String newPhone,
+  ) async {
+    final url = Uri.parse('$baseUrl/profile/update-phone');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'newPhone': newPhone}),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> markNotificationsRead(
+    int idStudent, {
+    int? idNotification,
+  }) async {
+    final url = Uri.parse('$baseUrl/notifications/mark-read');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'idNotification': idNotification,
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> registerForEvent(
+    int idStudent,
+    int idNotification,
+  ) async {
+    final url = Uri.parse('$baseUrl/events/register');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'idNotification': idNotification, // using legacy param name mapping inside EventController
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getDocumentRequests(int idStudent) async {
+    final url = Uri.parse('$baseUrl/documents');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createDocumentRequest(
+    int idStudent,
+    String type,
+    String? reason,
+    String urgency,
+  ) async {
+    final url = Uri.parse('$baseUrl/documents/create');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'documentType': type,
+          'reason': reason,
+          'urgency': urgency.toLowerCase(),
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getAttendance(
+    int idStudent, {
+    int? month,
+    int? year,
+  }) async {
+    // Calls new Laravel AttendanceController mapped exactly like the legacy get_attendance.php structure.
+    final url = Uri.parse('$baseUrl/attendance');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'idStudent': idStudent,
+          'month': month ?? DateTime.now().month,
+          'year': year ?? DateTime.now().year,
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }

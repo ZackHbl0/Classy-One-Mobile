@@ -1,8 +1,19 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../services/auth_service.dart';
-import 'login_page.dart';
+import 'evenements_page.dart';
 import 'notifications_page.dart';
+import 'paiement_page.dart';
+import 'planning_page.dart';
+import 'attendance_page.dart';
+import 'documents_page.dart';
+import 'profile_page.dart';
+import 'package:provider/provider.dart';
+import '../providers/payment_provider.dart';
+import '../models/course.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -21,16 +32,21 @@ class _DashboardPageState extends State<DashboardPage> {
   int _idStudent = 0;
   bool _isLoading = true;
   String _errorMessage = '';
+  int _currentCarouselIndex = 0;
 
-  // Data from API
   Map<String, dynamic> _stats = {
-    'non_lues': 0,
-    'cours_aujourdhui': 0,
-    'evenements': 0,
-    'impayes': 0,
+    'absences': 0,
+    'retards': 0,
+    'conges': 0,
+    'totalJours': 0,
+    'dernier_paiement': 'Aucun paiement',
   };
   List<dynamic> _urgentNotifications = [];
-  List<dynamic> _planning = [];
+  List<dynamic> _recentActivityFeed = [];
+  List<Course> _todaySessions = [];
+  Map<String, dynamic>? _nextEvent;
+  Map<String, dynamic>? _latestNotification;
+  int _currentSessionPageIndex = 0;
 
   final AuthService _authService = AuthService();
 
@@ -43,7 +59,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // First load what we have locally to show something quickly
     setState(() {
       _idStudent = prefs.getInt('idStudent') ?? 0;
       _matricule = prefs.getString('matricule') ?? '';
@@ -53,15 +68,21 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (_idStudent != 0) {
       await _fetchDashboardData();
+      if (mounted) {
+        context.read<PaymentProvider>().fetchPaymentData(_idStudent);
+      }
     } else {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Utilisateur non connecté';
+        _errorMessage = 'dashboard.user_not_connected'.tr();
       });
     }
   }
 
   Future<void> _fetchDashboardData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = _todaySessions.isEmpty);
+
     final result = await _authService.getDashboardData(_idStudent);
 
     if (mounted) {
@@ -71,7 +92,6 @@ class _DashboardPageState extends State<DashboardPage> {
         if (result['success'] == true) {
           final data = result['data'];
 
-          // Update personal info with fresh DB data
           if (data['student'] != null) {
             _nom = data['student']['nom'] ?? _nom;
             _prenom = data['student']['prenom'] ?? _prenom;
@@ -79,235 +99,323 @@ class _DashboardPageState extends State<DashboardPage> {
             _classe = data['student']['classe'] ?? '';
             _filiere = data['student']['filiere'] ?? '';
             _niveau = data['student']['niveau'] ?? '';
-          }
+            String telephone = data['student']['telephone'] ?? '';
 
+            SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('nom', _nom);
+              prefs.setString('prenom', _prenom);
+              prefs.setString('matricule', _matricule);
+              if (_classe.isNotEmpty) prefs.setString('classe', _classe);
+              if (_filiere.isNotEmpty) prefs.setString('filiere', _filiere);
+              if (_niveau.isNotEmpty) prefs.setString('niveau', _niveau);
+              if (telephone.isNotEmpty) prefs.setString('telephone', telephone);
+            });
+          }
           if (data['stats'] != null) {
             _stats = data['stats'];
           }
 
-          if (data['urgent_notifications'] != null) {
-            _urgentNotifications = data['urgent_notifications'];
+          if (data['urgentNotifications'] != null) {
+            _urgentNotifications = data['urgentNotifications'];
+            if (_urgentNotifications.isNotEmpty) {
+              _latestNotification = _urgentNotifications.first;
+            }
+          }
+          
+          if (data['nextEvent'] != null) {
+            _nextEvent = data['nextEvent'];
           }
 
-          if (data['planning'] != null) {
-            _planning = data['planning'];
+          if (data['recentActivityFeed'] != null) {
+            _recentActivityFeed = data['recentActivityFeed'];
           }
+          
+          if (data['today_sessions'] != null) {
+            final List<dynamic> sessionList = data['today_sessions'];
+            _todaySessions = sessionList.map((s) => Course.fromJson(s)).toList();
+          } else {
+            _todaySessions = [];
+          }
+          _errorMessage = '';
         } else {
-          _errorMessage =
-              result['message'] ?? 'Erreur lors du chargement des données';
+          _errorMessage = result['message'] ?? 'dashboard.data_load_error'.tr();
         }
       });
     }
   }
 
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear all saved data
-
-    if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
-  }
-
   // --- UI Builders ---
 
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    bool isSelected = false,
-    VoidCallback? onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isSelected ? const Color(0xFFF4B41A) : const Color(0xFF94A3B8),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected
-                ? const Color(0xFFF4B41A)
-                : const Color(0xFFCBD5E1),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        tileColor: isSelected ? const Color(0xFF1E293B) : Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        onTap: onTap ?? () {},
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required IconData icon,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF1E293B),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUrgentNotification({
-    required String badgeText,
-    required Color badgeColor,
-    required String date,
-    required String title,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  badgeText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                date,
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF1E293B),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlanningItem({
-    required String startTime,
-    required String endTime,
+  Widget _buildCarouselCard({
     required String title,
     required String subtitle,
-    required String type,
-    required Color lineColor,
-    required Color typeColor,
-    required Color typeBgColor,
+    required String value,
+    required IconData icon,
+    required List<Color> colors,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Column(
-            children: [
-              Text(
-                startTime,
-                style: const TextStyle(
-                  color: Color(0xFF1E293B),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                endTime,
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: colors,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors[1].withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-          const SizedBox(width: 16),
-          Container(
-            width: 3,
-            height: 40,
-            decoration: BoxDecoration(
-              color: lineColor,
-              borderRadius: BorderRadius.circular(3),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(25),
+            child: Stack(
+              children: [
+                PositionedDirectional(
+                  end: -15,
+                  bottom: -15,
+                  child: Icon(
+                    icon,
+                    size: 130,
+                    color: Colors.white.withOpacity(0.12),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(22.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          title.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Text(
+                            'dashboard.see_details'.tr(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroPanel() {
+    if (_todaySessions.isEmpty) {
+      return Container(
+        height: 160,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_note_outlined, color: Colors.grey[400], size: 40),
+            const SizedBox(height: 12),
+            Text(
+              'Aucun cours pour le moment',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Column(
+      children: [
+        CarouselSlider.builder(
+          itemCount: _todaySessions.length,
+          options: CarouselOptions(
+            height: 175,
+            viewportFraction: 0.9,
+            enlargeCenterPage: true,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 4),
+            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+            onPageChanged: (index, reason) {
+              setState(() => _currentSessionPageIndex = index);
+            },
+          ),
+          itemBuilder: (context, index, realIndex) {
+            final course = _todaySessions[index];
+            final isCurrent = course.isCurrent;
+
+            return GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlanningPage())),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isCurrent
+                        ? [const Color(0xFF8B5CF6), const Color(0xFF6366F1)]
+                        : [const Color(0xFF3B82F6), const Color(0xFF2563EB)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isCurrent ? const Color(0xFF6366F1) : const Color(0xFF3B82F6)).withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              course.label.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            course.matiere,
+                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 10),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time_rounded, color: Colors.white70, size: 16),
+                                const SizedBox(width: 4),
+                                Text(course.time, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                const SizedBox(width: 12),
+                                const Icon(Icons.location_on_rounded, color: Colors.white70, size: 16),
+                                const SizedBox(width: 4),
+                                Text(course.salle, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                const SizedBox(width: 12),
+                                const Icon(Icons.person_outline, color: Colors.white70, size: 16),
+                                const SizedBox(width: 4),
+                                Text(course.prof, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        if (_todaySessions.length > 1) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _todaySessions.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _currentSessionPageIndex == index ? 16.0 : 6.0,
+                height: 6.0,
+                margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  color: const Color(0xFF6366F1).withOpacity(_currentSessionPageIndex == index ? 0.9 : 0.2),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActivityItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required String time,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -316,35 +424,188 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF1E293B),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 12,
-                  ),
-                ),
+                Text(subtitle, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
               ],
             ),
           ),
+          Text(time, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading && _todaySessions.isEmpty) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF6366F1))),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: RefreshIndicator(
+        onRefresh: _fetchDashboardData,
+        color: const Color(0xFF6366F1),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildStatsCarousel(),
+                    const SizedBox(height: 12),
+                    _buildStatsDots(),
+                    const SizedBox(height: 28),
+                    _buildSectionHeader('CURSUS DU JOUR', () {}),
+                    const SizedBox(height: 16),
+                    _buildHeroPanel(),
+                    const SizedBox(height: 28),
+                    _buildSectionHeader(
+                      'dashboard.urgent_notifications'.tr(),
+                      () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage())),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildUrgentNotification(),
+                    const SizedBox(height: 28),
+                    _buildSectionHeader('dashboard.recent_activity'.tr(), () {}),
+                    const SizedBox(height: 16),
+                    _buildActivityFeed(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: typeBgColor,
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Text(
-              type,
-              style: TextStyle(
-                color: typeColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
+            child: Center(
+              child: Text(
+                _nom.isNotEmpty ? _nom[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${'dashboard.greeting'.tr()}, $_prenom 👋',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (_classe.isNotEmpty || _filiere.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '${_classe}${_classe.isNotEmpty && _filiere.isNotEmpty ? " • " : ""}${_filiere}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Chargement du profil...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF94A3B8),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Material(
+            color: Colors.white,
+            shape: const CircleBorder(),
+            elevation: 2,
+            shadowColor: Colors.black12,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              ),
+              borderRadius: BorderRadius.circular(50),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  color: Color(0xFF64748B),
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.white,
+            shape: const CircleBorder(),
+            elevation: 2,
+            shadowColor: Colors.black12,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationsPage()),
+              ),
+              borderRadius: BorderRadius.circular(50),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF64748B),
+                  size: 24,
+                ),
               ),
             ),
           ),
@@ -353,370 +614,163 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF203B68),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.shield,
-                color: Color(0xFF203B68),
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'OSBT NOTIFY',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+  Widget _buildStatsCarousel() {
+    return CarouselSlider(
+      options: CarouselOptions(
+        height: 180,
+        autoPlay: true,
+        autoPlayInterval: const Duration(seconds: 5),
+        enlargeCenterPage: true,
+        viewportFraction: 1.0,
+        onPageChanged: (index, reason) {
+          setState(() => _currentCarouselIndex = index);
+        },
       ),
-      endDrawer: Drawer(
-        backgroundColor: const Color(0xFF203B68),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.shield,
-                            color: Color(0xFF203B68),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'OSBT NOTIFY',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildDrawerItem(
-                icon: Icons.window_outlined,
-                title: 'Tableau de bord',
-                isSelected: true,
-              ),
-              _buildDrawerItem(
-                icon: Icons.notifications_none,
-                title: 'Notifications',
-                onTap: () {
-                  Navigator.pop(context); // Close Drawer
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsPage(),
-                    ),
-                  );
-                },
-              ),
-              _buildDrawerItem(
-                icon: Icons.calendar_today_outlined,
-                title: 'Planning',
-              ),
-              _buildDrawerItem(
-                icon: Icons.event_note_outlined,
-                title: 'Événements',
-              ),
-              _buildDrawerItem(
-                icon: Icons.credit_card_outlined,
-                title: 'Paiement',
-              ),
-              const Spacer(),
-              _buildDrawerItem(
-                icon: Icons.login_outlined,
-                title: 'Se déconnecter',
-                onTap: _logout,
-              ),
-              const SizedBox(height: 24),
-            ],
+      items: [
+        _buildCarouselCard(
+          title: 'AGENDA',
+          subtitle: _nextEvent != null ? (_nextEvent!['titre'] ?? 'Événement') : 'Aucun événement',
+          value: _nextEvent != null ? (_nextEvent!['date_evenement'] ?? '') : 'Rien de prévu',
+          icon: Icons.calendar_today_outlined,
+          colors: [const Color(0xFFFBBF24), const Color(0xFFF59E0B)],
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EvenementsPage())),
+        ),
+        _buildCarouselCard(
+          title: 'NOTIFICATIONS',
+          subtitle: _latestNotification != null ? (_latestNotification!['titre'] ?? '') : 'Pas de message',
+          value: _latestNotification != null ? (_latestNotification!['message'] ?? '') : 'Vérifiez plus tard',
+          icon: Icons.notifications_active_outlined,
+          colors: [const Color(0xFF60A5FA), const Color(0xFF3B82F6)],
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage())),
+        ),
+        _buildCarouselCard(
+          title: 'ASSIDUITÉ',
+          subtitle: 'Absences: ${_stats['absences']}',
+          value: 'Retards: ${_stats['retards']} | Congés: ${_stats['conges']}',
+          icon: Icons.person_off_outlined,
+          colors: [const Color(0xFF34D399), const Color(0xFF10B981)],
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendanceSummaryPage())),
+        ),
+        _buildCarouselCard(
+          title: 'FINANCES',
+          subtitle: 'Dernier statut: ${_stats['dernier_paiement']}',
+          value: 'Suivez vos règlements',
+          icon: Icons.account_balance_wallet_outlined,
+          colors: [const Color(0xFFF87171), const Color(0xFFEF4444)],
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PaiementPage())),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        4,
+        (index) => Container(
+          width: _currentCarouselIndex == index ? 20.0 : 6.0,
+          height: 6.0,
+          margin: const EdgeInsets.symmetric(horizontal: 3.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            color: const Color(0xFF64748B).withOpacity(_currentCarouselIndex == index ? 0.3 : 0.1),
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF203B68)),
-            )
-          : _errorMessage.isNotEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF203B68),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isLoading = true;
-                        _errorMessage = '';
-                      });
-                      _fetchDashboardData();
-                    },
-                    child: const Text(
-                      'Réessayer',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Text(
-                      'Bonjour, $_prenom 👋',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${_filiere.isNotEmpty ? _filiere : "Filière inconnue"} — ${_niveau.isNotEmpty ? _niveau : "Niveau inconnu"} —\n$_classe',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
+    );
+  }
 
-                    // Stats Grid
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            title: 'Non lues',
-                            icon: Icons.notifications_none,
-                            value: _stats['non_lues'].toString(),
-                            color: const Color(0xFF3B82F6),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildStatCard(
-                            title: "Cours\naujourd'hui",
-                            icon: Icons.calendar_month_outlined,
-                            value:
-                                _stats['cours_aujourdhui']?.toString() ?? '0',
-                            color: const Color(0xFF10B981),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            title: 'Événements',
-                            icon: Icons.event_note_outlined,
-                            value: _stats['evenements'].toString(),
-                            color: const Color(0xFFF59E0B),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildStatCard(
-                            title: 'Impayés',
-                            icon: Icons.credit_card_outlined,
-                            value: _stats['impayes'].toString(),
-                            color: const Color(0xFFEF4444),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
+  Widget _buildSectionHeader(String title, VoidCallback onTap) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 1),
+        ),
+        TextButton(
+          onPressed: onTap,
+          child: Text(
+            'dashboard.see_all'.tr(),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+          ),
+        ),
+      ],
+    );
+  }
 
-                    // Urgent Notifications
-                    if (_urgentNotifications.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFBEAEA),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFCA5A5)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: const [
-                                Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: Color(0xFFDC2626),
-                                  size: 22,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Notifications urgentes',
-                                  style: TextStyle(
-                                    color: Color(0xFF1E293B),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            ..._urgentNotifications.map((notif) {
-                              Color badgeColor = const Color(0xFF3B82F6);
-                              String badgeText = notif['categorie'] ?? 'Info';
-                              if (badgeText.toLowerCase().contains('examen'))
-                                badgeColor = const Color(0xFFF59E0B);
-                              else if (badgeText.toLowerCase().contains(
-                                'urgent',
-                              ))
-                                badgeColor = const Color(0xFFDC2626);
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildUrgentNotification(
-                                  badgeText: badgeText,
-                                  badgeColor: badgeColor,
-                                  date: notif['date_formattee'] ?? '',
-                                  title: notif['titre'] ?? '',
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-
-                    // Planning du jour
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(
-                                    Icons.access_time,
-                                    color: Color(0xFF64748B),
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Planning du jour',
-                                    style: TextStyle(
-                                      color: Color(0xFF1E293B),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Text(
-                                'Voir tout',
-                                style: TextStyle(
-                                  color: Color(0xFFF59E0B),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          if (_planning.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Text(
-                                'Aucun cours programmé pour aujourd\'hui',
-                                style: TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            )
-                          else
-                            ..._planning.map((item) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildPlanningItem(
-                                  startTime: item['startTime'] ?? '',
-                                  endTime: item['endTime'] ?? '',
-                                  title: item['title'] ?? '',
-                                  subtitle: item['subtitle'] ?? '',
-                                  type: item['type'] ?? 'COURS',
-                                  lineColor: const Color(0xFFF4B41A),
-                                  typeColor: const Color(0xFF3B82F6),
-                                  typeBgColor: const Color(0xFFDBEAFE),
-                                ),
-                              );
-                            }).toList(),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32), // Bottom padding
-                  ],
+  Widget _buildUrgentNotification() {
+    if (_urgentNotifications.isEmpty) return const SizedBox.shrink();
+    final notif = _urgentNotifications.first;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFEE2E2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFEF4444)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notif['titre'] ?? 'Notification Importante',
+                  style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-              ),
+                Text(
+                  notif['message'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityFeed() {
+    if (_recentActivityFeed.isEmpty) return const SizedBox.shrink();
+    
+    return Column(
+      children: _recentActivityFeed.map((item) {
+        IconData icon;
+        Color color;
+        
+        switch (item['type']) {
+          case 'document':
+            icon = Icons.description_outlined;
+            color = const Color(0xFF6366F1);
+            break;
+          case 'payment':
+            icon = Icons.account_balance_wallet_outlined;
+            color = const Color(0xFF10B981);
+            break;
+          case 'attendance':
+            icon = Icons.person_off_outlined;
+            color = const Color(0xFFEF4444);
+            break;
+          default:
+            icon = Icons.notifications_none_outlined;
+            color = const Color(0xFF64748B);
+        }
+        
+        return _buildActivityItem(
+          icon: icon,
+          color: color,
+          title: item['title'],
+          subtitle: item['subtitle'],
+          time: item['date_formattee'],
+        );
+      }).toList(),
     );
   }
 }

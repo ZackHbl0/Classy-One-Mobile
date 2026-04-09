@@ -1,0 +1,62 @@
+Table: anneescolaire
+  - id (int(11))
+  - libelle (varchar(254))
+  - dateDebut (datetime)
+  - dateFin (datetime)
+
+Table: classe
+  - id (int(11))
+  - Ann_id (int(11))
+  - Not_id (int(11))
+  - nomClasse (varchar(254))
+
+Table: cycle
+  - id (int(11))
+  - Ann_id (int(11))
+  - nomCycle (varchar(254))
+
+Table: level
+  - id (int(11))
+  - Cyc_id (int(11))
+  - nom_niveau (varchar(254))
+
+Table: notification
+  - id (int(11))
+  - titre (varchar(254))
+  - message (text)
+  - categorie (varchar(254))
+  - pieceJointe (text)
+
+Table: option
+  - id (int(11))
+  - Lev_id (int(11))
+  - nomOption (varchar(254))
+
+Table: paiement
+  - id (int(11))
+  - Ann_id (int(11))
+  - Reg_id (int(11))
+  - montant (decimal(10,2))
+  - dateEcheance (datetime)
+  - statut (varchar(254))
+
+Table: planning
+  - id (int(11))
+  - Cla_id (int(11))
+  - fileUrl (text)
+  - weekNumber (int(11))
+
+Table: registre
+  - id (int(11))
+  - idStudent (int(11))
+  - Cla_id (int(11))
+  - statut (varchar(254))
+
+Table: student
+  - idStudent (int(11))
+  - matricule (varchar(254))
+  - nom (varchar(254))
+  - prenom (varchar(254))
+  - password (varchar(254))
+  - fcmToken (varchar(254))
+

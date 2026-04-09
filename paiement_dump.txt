@@ -1,0 +1,73 @@
+﻿PAIEMENT SAMPLE:
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [Ann_id] => 2
+            [Reg_id] => 1
+            [montant] => 1500.00
+            [dateEcheance] => 2026-03-30 23:59:59
+            [statut] => pay├®
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [Ann_id] => 2
+            [Reg_id] => 2
+            [montant] => 1500.00
+            [dateEcheance] => 2026-03-30 23:59:59
+            [statut] => Pay├®
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [Ann_id] => 2
+            [Reg_id] => 1
+            [montant] => 1500.00
+            [dateEcheance] => 2026-03-25 16:51:43
+            [statut] => pay├®
+        )
+
+    [3] => Array
+        (
+            [id] => 4
+            [Ann_id] => 2
+            [Reg_id] => 2
+            [montant] => 6000.00
+            [dateEcheance] => 2026-03-08 15:54:21
+            [statut] => pay├®
+        )
+
+    [4] => Array
+        (
+            [id] => 5
+            [Ann_id] => 2
+            [Reg_id] => 1
+            [montant] => 2687.00
+            [dateEcheance] => 2026-03-06 22:10:13
+            [statut] => pay├®
+        )
+
+)
+
+ANN_ID from paiement:
+Array
+(
+    [0] => 2
+)
+
+REGISTRE with student 1:
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [idStudent] => 1
+            [Cla_id] => 1
+            [statut] => Inscrit
+        )
+
+)
