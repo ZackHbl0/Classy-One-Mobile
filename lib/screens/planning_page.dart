@@ -22,10 +22,22 @@ class _PlanningPageState extends State<PlanningPage> {
   late int _selectedDayOfWeek;
 
   static const List<String> _dayLabels = [
-    'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'
+    'LUN',
+    'MAR',
+    'MER',
+    'JEU',
+    'VEN',
+    'SAM',
+    'DIM',
   ];
   static const List<String> _dayFullNames = [
-    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+    'Dimanche',
   ];
 
   @override
@@ -84,7 +96,16 @@ class _PlanningPageState extends State<PlanningPage> {
   List<dynamic> _getClassesForSelectedDay() {
     if (_allClasses.isEmpty) return [];
 
+    final String selectedDayName = _dayFullNames[_selectedDayOfWeek - 1];
+
     final filtered = _allClasses.where((item) {
+      // 1. Check for 'jour' field (New preferred system: 'Lundi', 'Mardi'...)
+      if (item['jour'] != null && item['jour'].toString().isNotEmpty) {
+        return item['jour'].toString().toLowerCase() ==
+            selectedDayName.toLowerCase();
+      }
+
+      // 2. Fallback to legacy 'date' parsing (Calculates weekday from specific date)
       if (item['date'] == null) return false;
       try {
         final raw = item['date'].toString().split('T').first;
@@ -112,8 +133,9 @@ class _PlanningPageState extends State<PlanningPage> {
     final todaysClasses = _getClassesForSelectedDay();
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -157,8 +179,8 @@ class _PlanningPageState extends State<PlanningPage> {
                           color: isSelected
                               ? primaryBlue
                               : (isDark
-                                  ? const Color(0xFF1E293B)
-                                  : Colors.white),
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             if (isSelected)
@@ -183,8 +205,8 @@ class _PlanningPageState extends State<PlanningPage> {
                               color: isSelected
                                   ? Colors.white
                                   : (isDark
-                                      ? Colors.white54
-                                      : Colors.grey[600]),
+                                        ? Colors.white54
+                                        : Colors.grey[600]),
                             ),
                           ),
                         ),
@@ -197,8 +219,7 @@ class _PlanningPageState extends State<PlanningPage> {
 
             // ── Selected Day Full Name ───────────────────────────────
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
                 _dayFullNames[_selectedDayOfWeek - 1],
                 style: TextStyle(
@@ -219,11 +240,15 @@ class _PlanningPageState extends State<PlanningPage> {
                           ? _buildEmptyState()
                           : ListView.builder(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 10),
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
                               itemCount: todaysClasses.length,
                               itemBuilder: (context, index) =>
                                   _buildTimelineCard(
-                                      todaysClasses[index], isDark),
+                                    todaysClasses[index],
+                                    isDark,
+                                  ),
                             ),
                     ),
             ),
@@ -311,19 +336,17 @@ class _PlanningPageState extends State<PlanningPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: isDark
-                            ? Colors.white
-                            : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.person_outline,
-                            size: 14,
-                            color: isDark
-                                ? Colors.white54
-                                : Colors.grey[600]),
+                        Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
@@ -331,19 +354,17 @@ class _PlanningPageState extends State<PlanningPage> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isDark
-                                  ? Colors.white60
-                                  : Colors.grey[700],
+                              color: isDark ? Colors.white60 : Colors.grey[700],
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.location_on_outlined,
-                            size: 14,
-                            color: isDark
-                                ? Colors.white54
-                                : Colors.grey[600]),
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
@@ -351,9 +372,7 @@ class _PlanningPageState extends State<PlanningPage> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isDark
-                                  ? Colors.white60
-                                  : Colors.grey[700],
+                              color: isDark ? Colors.white60 : Colors.grey[700],
                               fontWeight: FontWeight.w500,
                             ),
                           ),

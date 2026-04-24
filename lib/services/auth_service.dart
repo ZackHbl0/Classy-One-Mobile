@@ -7,13 +7,15 @@ import '../models/student.dart';
 
 class AuthService {
   // Update to the new Laravel API path
-        static const String baseUrl = "http://192.168.100.55/osbt-api/public/api";  
+  // static const String baseUrl = "http://[IP_ADDRESS]/osbt-api/public/api";
+
+  static const String baseUrl = "http://classy-one.test/api";
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     return {
-      'Content-Type': 'application/json', 
+      'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
@@ -37,7 +39,10 @@ class AuthService {
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'matricule': matricule,
           'password': password,
@@ -68,12 +73,14 @@ class AuthService {
           final errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? 'Server error: ${response.statusCode}',
+            'message':
+                errorData['message'] ?? 'Server error: ${response.statusCode}',
           };
         } catch (e) {
           return {
             'success': false,
-            'message': 'Server returned an invalid response. Status: ${response.statusCode}',
+            'message':
+                'Server returned an invalid response. Status: ${response.statusCode}',
           };
         }
       }
@@ -103,7 +110,10 @@ class AuthService {
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           'matricule': matricule,
           'nom': nom,
@@ -138,19 +148,18 @@ class AuthService {
         try {
           final errorData = jsonDecode(response.body);
           // Handle Laravel validation errors nicely if present
-          String errMsg = errorData['message'] ?? 'Server error: ${response.statusCode}';
+          String errMsg =
+              errorData['message'] ?? 'Server error: ${response.statusCode}';
           if (errorData['errors'] != null) {
             final errors = errorData['errors'] as Map<String, dynamic>;
             errMsg = errors.values.first[0]; // Get first validation error
           }
-          return {
-            'success': false,
-            'message': errMsg,
-          };
+          return {'success': false, 'message': errMsg};
         } catch (e) {
           return {
             'success': false,
-            'message': 'Server returned an invalid response. Status: ${response.statusCode}',
+            'message':
+                'Server returned an invalid response. Status: ${response.statusCode}',
           };
         }
       }
@@ -167,7 +176,7 @@ class AuthService {
     } catch (e) {
       // Ignore network errors on logout, just clear locally
     }
-    
+
     // Always clear the token locally
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
@@ -180,7 +189,9 @@ class AuthService {
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode({}), // idStudent is no longer needed but backend ignores it anyway
+        body: jsonEncode(
+          {},
+        ), // idStudent is no longer needed but backend ignores it anyway
       );
 
       if (response.statusCode == 200) {
@@ -193,9 +204,9 @@ class AuthService {
           'message': data['message'] ?? 'Failed to load data',
         };
       } else if (response.statusCode == 401) {
-         return {'success': false, 'message': 'Session expired'};
+        return {'success': false, 'message': 'Session expired'};
       } else {
-         return {'success': false, 'message': 'Error: ${response.statusCode}'};
+        return {'success': false, 'message': 'Error: ${response.statusCode}'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
@@ -218,7 +229,10 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> getEvenements(int idStudent, {String category = 'Tout'}) async {
+  Future<Map<String, dynamic>> getEvenements(
+    int idStudent, {
+    String category = 'Tout',
+  }) async {
     final url = Uri.parse('$baseUrl/events');
     try {
       final headers = await _getHeaders();
@@ -238,7 +252,11 @@ class AuthService {
     final url = Uri.parse('$baseUrl/planning');
     try {
       final headers = await _getHeaders();
-      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({}),
+      );
       if (response.statusCode == 200) return jsonDecode(response.body);
 
       try {
@@ -259,7 +277,11 @@ class AuthService {
     final url = Uri.parse('$baseUrl/paiement');
     try {
       final headers = await _getHeaders();
-      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({}),
+      );
       if (response.statusCode == 200) return jsonDecode(response.body);
       try {
         final errorData = jsonDecode(response.body);
@@ -327,9 +349,7 @@ class AuthService {
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode({
-          'idNotification': idNotification,
-        }),
+        body: jsonEncode({'idNotification': idNotification}),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
       return {'success': false, 'message': 'Error: ${response.statusCode}'};
@@ -349,7 +369,8 @@ class AuthService {
         url,
         headers: headers,
         body: jsonEncode({
-          'idNotification': idNotification, // using legacy param name mapping inside EventController
+          'idNotification':
+              idNotification, // using legacy param name mapping inside EventController
         }),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
@@ -363,7 +384,11 @@ class AuthService {
     final url = Uri.parse('$baseUrl/documents');
     try {
       final headers = await _getHeaders();
-      final response = await http.post(url, headers: headers, body: jsonEncode({}));
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({}),
+      );
       if (response.statusCode == 200) return jsonDecode(response.body);
       return {'success': false, 'message': 'Error: ${response.statusCode}'};
     } catch (e) {
