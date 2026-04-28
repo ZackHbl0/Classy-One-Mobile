@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../services/auth_service.dart';
 import '../widgets/screen_header.dart';
 import '../models/event_model.dart';
+import 'event_detail_page.dart';
 import 'package:intl/intl.dart';
 
 class EvenementsPage extends StatefulWidget {
@@ -61,36 +62,6 @@ class _EvenementsPageState extends State<EvenementsPage> {
   void _filterEvents(String category) {
     if (_selectedCategory == category && !_isLoading) return;
     _fetchEvenements(category: category);
-  }
-
-  Future<void> _registerForEvent(int idEvent) async {
-    final prefs = await SharedPreferences.getInstance();
-    final idStudent = prefs.getInt('idStudent') ?? 0;
-
-    if (idStudent != 0) {
-      // Re-using the existing registerForEvent service method.
-      // Note: In PHP, 'idNotification' is currently mapped to 'idEvent' in our new logic.
-      final result = await _authService.registerForEvent(idStudent, idEvent);
-
-      if (result['success'] == true) {
-        _fetchEvenements();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Inscription réussie !')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result['message'] ?? 'Erreur lors de l\'inscription',
-              ),
-            ),
-          );
-        }
-      }
-    }
   }
 
   @override
@@ -254,224 +225,130 @@ class _EvenementsPageState extends State<EvenementsPage> {
         ? DateFormat('MMM').format(event.dateEvent!).toUpperCase()
         : 'À VENIR';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () async {
+        final bool? registered = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailPage(event: event),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image with Error Handling
-            Container(
-              width: 90,
-              height: 110,
-              decoration: BoxDecoration(
-                color: primaryBlue.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child:
-                  event.imageUrl != null && event.imageUrl!.startsWith('http')
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        event.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.celebration_outlined,
-                              color: primaryBlue,
-                              size: 30,
-                            ),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.celebration_outlined,
-                      color: primaryBlue,
-                      size: 30,
-                    ),
+        );
+        if (registered == true) {
+          _fetchEvenements();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-
-            const SizedBox(width: 16),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Date Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primaryBlue,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              dayStr,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                height: 1.0,
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Small Thumbnail
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: primaryBlue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child:
+                    event.imageUrl != null && event.imageUrl!.startsWith('http')
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          event.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.celebration_outlined,
+                                color: primaryBlue,
+                                size: 20,
                               ),
-                            ),
-                            Text(
-                              monthStr,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
                         ),
+                      )
+                    : const Icon(
+                        Icons.celebration_outlined,
+                        color: primaryBlue,
+                        size: 20,
                       ),
+              ),
 
-                      // Participants
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.people_alt,
-                            size: 12,
-                            color: slateGrey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${event.participants}',
-                            style: const TextStyle(
-                              color: slateGrey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+              const SizedBox(width: 16),
+
+              // Title and Date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    event.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
                     ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 12,
-                        color: slateGrey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${event.location} - ${event.dateEvent != null ? DateFormat('HH:mm').format(event.dateEvent!) : "10:00 AM"}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 12,
+                          color: slateGrey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$dayStr $monthStr',
                           style: const TextStyle(
                             color: slateGrey,
                             fontSize: 12,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: event.isConfirmed
-                        ? Row(
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Déjà Inscrit',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              TextButton.icon(
-                                onPressed: () {},
-                                icon: const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Calendrier',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  foregroundColor: primaryBlue,
-                                ),
-                              ),
-                            ],
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _registerForEvent(event.id),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryBlue,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: const Text(
-                              'S\'inscrire',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: slateGrey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: slateGrey,
+                              fontSize: 12,
                             ),
                           ),
-                  ),
-                ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Color(0xFFCBD5E1),
+              ),
+            ],
+          ),
         ),
       ),
     );

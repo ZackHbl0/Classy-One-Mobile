@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/screen_header.dart';
+import '../widgets/document_detail_sheet.dart';
 import 'package:flutter_application_1/screens/new_document_request_page.dart';
 import 'package:intl/intl.dart';
 
@@ -160,6 +161,15 @@ class _DocumentsPageState extends State<DocumentsPage> {
     );
   }
 
+  void _showRequestDetail(dynamic req) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DocumentDetailSheet(request: req),
+    );
+  }
+
   Widget _buildRequestCard(dynamic req) {
     final String status = req['status'] ?? 'pending';
     final Color statusColor = _getStatusColor(status);
@@ -183,62 +193,69 @@ class _DocumentsPageState extends State<DocumentsPage> {
         ],
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  req['document_type'] ?? 'Document',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+      child: InkWell(
+        onTap: () => _showRequestDetail(req),
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    req['document_type'] ?? 'Document',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                 ),
-              ),
-              _buildStatusBadge(statusLabel, statusColor),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 14,
-                color: Color(0xFF94A3B8),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Demandé le : $dateStr',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-            ],
-          ),
-          if (req['urgency'] == 'urgent') ...[
-            const SizedBox(height: 8),
+                _buildStatusBadge(statusLabel, statusColor),
+              ],
+            ),
+            const SizedBox(height: 12),
             Row(
-              children: const [
-                Icon(Icons.speed, size: 14, color: Color(0xFFEF4444)),
-                SizedBox(width: 6),
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: Color(0xFF94A3B8),
+                ),
+                const SizedBox(width: 6),
                 Text(
-                  'Urgent',
-                  style: TextStyle(
+                  'Demandé le : $dateStr',
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFFEF4444),
-                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
+            if (req['urgency'] == 'urgent') ...[
+              const SizedBox(height: 8),
+              Row(
+                children: const [
+                  Icon(Icons.speed, size: 14, color: Color(0xFFEF4444)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Urgent',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFEF4444),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (status == 'Prêt') ...[
+              const SizedBox(height: 20),
+              _buildDownloadButton(req),
+            ],
           ],
-          if (status == 'Prêt') ...[
-            const SizedBox(height: 20),
-            _buildDownloadButton(req),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -251,15 +268,19 @@ class _DocumentsPageState extends State<DocumentsPage> {
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString('token') ?? '';
           final id = req['id'];
-          // Use the secure download endpoint. 
+          // Use the secure download endpoint.
           // For token auth, we usually fetch first, but for simple launch we append token or use a temporary link.
-          final url = Uri.parse('${AuthService.baseUrl}/documents/$id/download?token=$token');
-          
+          final url = Uri.parse(
+            '${AuthService.baseUrl}/documents/$id/download?token=$token',
+          );
+
           if (await canLaunchUrl(url)) {
             await launchUrl(url, mode: LaunchMode.externalApplication);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Impossible d\'ouvrir le lien de téléchargement')),
+              const SnackBar(
+                content: Text('Impossible d\'ouvrir le lien de téléchargement'),
+              ),
             );
           }
         },

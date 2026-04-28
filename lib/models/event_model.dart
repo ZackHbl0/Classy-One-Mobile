@@ -8,6 +8,7 @@ class EventModel {
   final String category;
   final bool isConfirmed;
   final int participants;
+  final String price;
 
   EventModel({
     required this.id,
@@ -19,6 +20,7 @@ class EventModel {
     required this.category,
     required this.isConfirmed,
     required this.participants,
+    required this.price,
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class EventModel {
       category: json['category'] ?? 'Académique',
       isConfirmed: json['isConfirmed'] ?? false,
       participants: json['participants'] ?? 0,
+      price: json['price'] ?? 'Gratuit',
     );
   }
 }
