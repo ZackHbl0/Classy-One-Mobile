@@ -48,33 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       physics: const BouncingScrollPhysics(),
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader('settings.preferences'.tr(), isDark),
-            _buildSettingsCard([
-              _buildListTile(
-                Icons.language_rounded,
-                'settings.language'.tr(),
-                isDark,
-                context,
-                trailingText: _getLanguageName(context.locale.languageCode),
-                onTap: () => _showLanguagePicker(context),
-              ),
-              _buildSwitchTile(
-                Icons.dark_mode_outlined,
-                'settings.dark_mode'.tr(),
-                themeProvider.isDarkMode,
-                (val) => themeProvider.toggleTheme(val),
-                isDark,
-                context,
-                showBorder: false,
-              ),
-            ], isDark),
-          ],
-        ),
 
-        const SizedBox(height: 32),
 
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,64 +293,5 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _getLanguageName(String code) {
-    switch (code) {
-      case 'fr':
-        return 'Français';
-      case 'ar':
-        return 'العربية';
-      case 'en':
-        return 'English';
-      default:
-        return 'Français';
-    }
-  }
 
-  void _showLanguagePicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'settings.choose_language'.tr(),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildLangItem(context, 'Français', const Locale('fr')),
-              _buildLangItem(context, 'العربية', const Locale('ar')),
-              _buildLangItem(context, 'English', const Locale('en')),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildLangItem(BuildContext context, String name, Locale locale) {
-    final isSelected = context.locale == locale;
-    return ListTile(
-      title: Text(
-        name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? Theme.of(context).primaryColor : null,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: Theme.of(context).primaryColor)
-          : null,
-      onTap: () {
-        context.setLocale(locale);
-        Navigator.pop(context);
-        setState(() {}); // Refresh UI
-      },
-    );
-  }
 }

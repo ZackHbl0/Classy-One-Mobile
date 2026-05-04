@@ -55,7 +55,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
         child: RefreshIndicator(
           onRefresh: _fetchRequests,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
             physics: const BouncingScrollPhysics(),
             children: [
               ScreenHeader(title: 'documents.title'.tr()),

@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'providers/theme_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/payment_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/login_page.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -23,15 +24,11 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
+
     // Demander la permission pour les notifications (très important pour le background/foreground FCM)
     FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
+
     // Configuration des notifications en premier plan (Foreground)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'high_importance_channel',
@@ -45,7 +42,8 @@ void main() async {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -61,14 +59,14 @@ void main() async {
             android: AndroidNotificationDetails(
               'high_importance_channel',
               'High Importance Notifications',
-              channelDescription: 'Canal utilisé pour les notifications importantes.',
+              channelDescription:
+                  'Canal utilisé pour les notifications importantes.',
               icon: '@mipmap/ic_launcher',
             ),
           ),
         );
       }
     });
-
   } catch (e) {
     debugPrint('Erreur d\'initialisation Firebase: $e');
   }
@@ -78,7 +76,7 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('fr'), Locale('en'), Locale('ar')],
+      supportedLocales: const [Locale('fr')],
       path: 'assets/translations',
       fallbackLocale: const Locale('fr'),
       child: MultiProvider(
@@ -86,6 +84,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => PaymentProvider()),
+          ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ],
         child: MyApp(initialRoute: idStudent != null ? '/main' : '/login'),
       ),
@@ -113,10 +112,7 @@ class MyApp extends StatelessWidget {
           supportedLocales: context.supportedLocales,
           locale: context.locale,
           theme: themeProvider.lightTheme,
-          darkTheme: themeProvider.darkTheme,
-          themeMode: themeProvider.isDarkMode
-              ? ThemeMode.dark
-              : ThemeMode.light,
+          themeMode: ThemeMode.light,
           initialRoute: initialRoute,
           routes: {
             '/welcome': (context) => const WelcomePage(),

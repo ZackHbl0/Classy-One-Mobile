@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/notifications_page.dart';
 import '../screens/profile_page.dart';
+import 'notification_bell.dart';
 
 class ScreenHeader extends StatelessWidget {
   final String title;
@@ -55,7 +56,9 @@ class ScreenHeader extends StatelessWidget {
             children: [
               _buildIconButton(
                 context,
-                Icons.notifications_none,
+                NotificationBell(
+                  iconColor: isDark ? Colors.white70 : const Color(0xFF1A365D),
+                ),
                 isDark,
                 () => Navigator.push(
                   context,
@@ -67,7 +70,10 @@ class ScreenHeader extends StatelessWidget {
               const SizedBox(width: 8),
               _buildIconButton(
                 context,
-                Icons.person_outline,
+                Icon(
+                  Icons.person_outline,
+                  color: isDark ? Colors.white70 : const Color(0xFF1A365D),
+                ),
                 isDark,
                 () => Navigator.push(
                   context,
@@ -82,7 +88,7 @@ class ScreenHeader extends StatelessWidget {
 
   Widget _buildIconButton(
     BuildContext context,
-    IconData icon,
+    Widget iconWidget,
     bool isDark,
     VoidCallback onTap,
   ) {
@@ -99,10 +105,7 @@ class ScreenHeader extends StatelessWidget {
         ],
       ),
       child: IconButton(
-        icon: Icon(
-          icon,
-          color: isDark ? Colors.white70 : const Color(0xFF1A365D),
-        ),
+        icon: iconWidget,
         onPressed: onTap,
       ),
     );

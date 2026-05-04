@@ -64,7 +64,7 @@ class _PaiementPageState extends State<PaiementPage> {
       physics: const BouncingScrollPhysics(),
       child: Padding(
         padding: const EdgeInsetsDirectional.only(
-          top: 20.0,
+          top: 32.0,
           start: 20.0,
           end: 20.0,
           bottom: 40.0,

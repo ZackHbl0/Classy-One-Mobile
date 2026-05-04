@@ -13,6 +13,8 @@ import 'documents_page.dart';
 import 'profile_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
+import '../providers/notification_provider.dart';
+import '../widgets/notification_bell.dart';
 import '../models/course.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -70,6 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
       await _fetchDashboardData();
       if (mounted) {
         context.read<PaymentProvider>().fetchPaymentData(_idStudent);
+        context.read<NotificationProvider>().fetchNotifications(_idStudent);
       }
     } else {
       setState(() {
@@ -121,7 +124,7 @@ class _DashboardPageState extends State<DashboardPage> {
               _latestNotification = _urgentNotifications.first;
             }
           }
-          
+
           if (data['nextEvent'] != null) {
             _nextEvent = data['nextEvent'];
           }
@@ -129,10 +132,17 @@ class _DashboardPageState extends State<DashboardPage> {
           if (data['recentActivityFeed'] != null) {
             _recentActivityFeed = data['recentActivityFeed'];
           }
-          
-          if (data['today_sessions'] != null) {
+
+          if (data['planning'] != null) {
+            final List<dynamic> sessionList = data['planning'];
+            _todaySessions = sessionList
+                .map((s) => Course.fromJson(s))
+                .toList();
+          } else if (data['today_sessions'] != null) {
             final List<dynamic> sessionList = data['today_sessions'];
-            _todaySessions = sessionList.map((s) => Course.fromJson(s)).toList();
+            _todaySessions = sessionList
+                .map((s) => Course.fromJson(s))
+                .toList();
           } else {
             _todaySessions = [];
           }
@@ -196,7 +206,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
@@ -241,7 +254,11 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                         ],
                       ),
                     ],
@@ -278,7 +295,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       );
     }
-    
+
     return Column(
       children: [
         CarouselSlider.builder(
@@ -299,7 +316,10 @@ class _DashboardPageState extends State<DashboardPage> {
             final isCurrent = course.isCurrent;
 
             return GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlanningPage())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PlanningPage()),
+              ),
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -313,7 +333,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (isCurrent ? const Color(0xFF6366F1) : const Color(0xFF3B82F6)).withOpacity(0.3),
+                      color:
+                          (isCurrent
+                                  ? const Color(0xFF6366F1)
+                                  : const Color(0xFF3B82F6))
+                              .withOpacity(0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -326,7 +350,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
@@ -344,31 +371,69 @@ class _DashboardPageState extends State<DashboardPage> {
                           const SizedBox(height: 12),
                           Text(
                             course.matiere,
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
-                                const Icon(Icons.access_time_rounded, color: Colors.white70, size: 16),
+                                const Icon(
+                                  Icons.access_time_rounded,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(course.time, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                Text(
+                                  course.time,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
-                                const Icon(Icons.location_on_rounded, color: Colors.white70, size: 16),
+                                const Icon(
+                                  Icons.location_on_rounded,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(course.salle, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                Text(
+                                  course.salle,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
-                                const Icon(Icons.person_outline, color: Colors.white70, size: 16),
+                                const Icon(
+                                  Icons.person_outline,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(course.prof, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                Text(
+                                  course.prof,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -388,7 +453,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 margin: const EdgeInsets.symmetric(horizontal: 3.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(3),
-                  color: const Color(0xFF6366F1).withOpacity(_currentSessionPageIndex == index ? 0.9 : 0.2),
+                  color: const Color(
+                    0xFF6366F1,
+                  ).withOpacity(_currentSessionPageIndex == index ? 0.9 : 0.2),
                 ),
               ),
             ),
@@ -424,13 +491,26 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Text(subtitle, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
-          Text(time, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+          Text(
+            time,
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+          ),
         ],
       ),
     );
@@ -440,7 +520,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     if (_isLoading && _todaySessions.isEmpty) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF6366F1))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+        ),
       );
     }
 
@@ -472,12 +554,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 28),
                     _buildSectionHeader(
                       'dashboard.urgent_notifications'.tr(),
-                      () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage())),
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsPage(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildUrgentNotification(),
                     const SizedBox(height: 28),
-                    _buildSectionHeader('dashboard.recent_activity'.tr(), () {}),
+                    _buildSectionHeader(
+                      'dashboard.recent_activity'.tr(),
+                      () {},
+                    ),
                     const SizedBox(height: 16),
                     _buildActivityFeed(),
                   ],
@@ -531,7 +621,7 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${'dashboard.greeting'.tr()}, $_prenom 👋',
+                  '${'dashboard.greeting'.tr()}, $_prenom',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -550,22 +640,32 @@ class _DashboardPageState extends State<DashboardPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                  )
-                else
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Chargement du profil...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF94A3B8),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
                   ),
               ],
             ),
           ),
+          Material(
+            color: Colors.white,
+            shape: const CircleBorder(),
+            elevation: 2,
+            shadowColor: Colors.black12,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsPage(),
+                ),
+              ),
+              borderRadius: BorderRadius.circular(50),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                child: const NotificationBell(
+                  iconColor: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Material(
             color: Colors.white,
             shape: const CircleBorder(),
@@ -581,29 +681,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: const EdgeInsets.all(12),
                 child: const Icon(
                   Icons.person_outline_rounded,
-                  color: Color(0xFF64748B),
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: Colors.white,
-            shape: const CircleBorder(),
-            elevation: 2,
-            shadowColor: Colors.black12,
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsPage()),
-              ),
-              borderRadius: BorderRadius.circular(50),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                child: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Color(0xFF64748B),
+                  color: Color(0xFF1E293B),
                   size: 24,
                 ),
               ),
@@ -629,19 +707,33 @@ class _DashboardPageState extends State<DashboardPage> {
       items: [
         _buildCarouselCard(
           title: 'AGENDA',
-          subtitle: _nextEvent != null ? (_nextEvent!['titre'] ?? 'Événement') : 'Aucun événement',
-          value: _nextEvent != null ? (_nextEvent!['date_evenement'] ?? '') : 'Rien de prévu',
+          subtitle: _nextEvent != null
+              ? (_nextEvent!['titre'] ?? 'Événement')
+              : 'Aucun événement',
+          value: _nextEvent != null
+              ? (_nextEvent!['date_evenement'] ?? '')
+              : 'Rien de prévu',
           icon: Icons.calendar_today_outlined,
           colors: [const Color(0xFFFBBF24), const Color(0xFFF59E0B)],
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EvenementsPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EvenementsPage()),
+          ),
         ),
         _buildCarouselCard(
           title: 'NOTIFICATIONS',
-          subtitle: _latestNotification != null ? (_latestNotification!['titre'] ?? '') : 'Pas de message',
-          value: _latestNotification != null ? (_latestNotification!['message'] ?? '') : 'Vérifiez plus tard',
+          subtitle: _latestNotification != null
+              ? (_latestNotification!['titre'] ?? '')
+              : 'Pas de message',
+          value: _latestNotification != null
+              ? (_latestNotification!['message'] ?? '')
+              : 'Vérifiez plus tard',
           icon: Icons.notifications_active_outlined,
           colors: [const Color(0xFF60A5FA), const Color(0xFF3B82F6)],
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NotificationsPage()),
+          ),
         ),
         _buildCarouselCard(
           title: 'ASSIDUITÉ',
@@ -649,7 +741,12 @@ class _DashboardPageState extends State<DashboardPage> {
           value: 'Retards: ${_stats['retards']} | Congés: ${_stats['conges']}',
           icon: Icons.person_off_outlined,
           colors: [const Color(0xFF34D399), const Color(0xFF10B981)],
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendanceSummaryPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AttendanceSummaryPage(),
+            ),
+          ),
         ),
         _buildCarouselCard(
           title: 'FINANCES',
@@ -657,7 +754,10 @@ class _DashboardPageState extends State<DashboardPage> {
           value: 'Suivez vos règlements',
           icon: Icons.account_balance_wallet_outlined,
           colors: [const Color(0xFFF87171), const Color(0xFFEF4444)],
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PaiementPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PaiementPage()),
+          ),
         ),
       ],
     );
@@ -674,7 +774,9 @@ class _DashboardPageState extends State<DashboardPage> {
           margin: const EdgeInsets.symmetric(horizontal: 3.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(3),
-            color: const Color(0xFF64748B).withOpacity(_currentCarouselIndex == index ? 0.3 : 0.1),
+            color: const Color(
+              0xFF64748B,
+            ).withOpacity(_currentCarouselIndex == index ? 0.3 : 0.1),
           ),
         ),
       ),
@@ -687,13 +789,22 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 1),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF64748B),
+            letterSpacing: 1,
+          ),
         ),
         TextButton(
           onPressed: onTap,
           child: Text(
             'dashboard.see_all'.tr(),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6366F1),
+            ),
           ),
         ),
       ],
@@ -703,7 +814,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildUrgentNotification() {
     if (_urgentNotifications.isEmpty) return const SizedBox.shrink();
     final notif = _urgentNotifications.first;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -721,13 +832,20 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   notif['titre'] ?? 'Notification Importante',
-                  style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    color: Color(0xFFB91C1C),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 Text(
                   notif['message'] ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12),
+                  style: const TextStyle(
+                    color: Color(0xFFDC2626),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -739,12 +857,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildActivityFeed() {
     if (_recentActivityFeed.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       children: _recentActivityFeed.map((item) {
         IconData icon;
         Color color;
-        
+
         switch (item['type']) {
           case 'document':
             icon = Icons.description_outlined;
@@ -762,7 +880,7 @@ class _DashboardPageState extends State<DashboardPage> {
             icon = Icons.notifications_none_outlined;
             color = const Color(0xFF64748B);
         }
-        
+
         return _buildActivityItem(
           icon: icon,
           color: color,

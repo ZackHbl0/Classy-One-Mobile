@@ -42,53 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showLanguagePicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'profile.choose_language'.tr(),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildLangItem(context, 'Français', const Locale('fr')),
-              _buildLangItem(context, 'العربية', const Locale('ar')),
-              _buildLangItem(context, 'English', const Locale('en')),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
-  Widget _buildLangItem(BuildContext context, String name, Locale locale) {
-    final isSelected = context.locale == locale;
-    return ListTile(
-      title: Text(
-        name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? Theme.of(context).primaryColor : null,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: Theme.of(context).primaryColor)
-          : null,
-      onTap: () {
-        context.setLocale(locale);
-        Navigator.pop(context);
-        setState(() {}); // Refresh UI
-      },
-    );
-  }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
@@ -316,29 +270,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 32),
 
                   // Individual Settings Rows
-                  _buildProfileTile(
-                    icon: Icons.language_outlined,
-                    title: 'profile.language'.tr(),
-                    isDark: isDark,
-                    onTap: () => _showLanguagePicker(context),
-                  ),
-                  _buildProfileTile(
-                    icon: Icons.brightness_medium_outlined,
-                    title: 'profile.display_mode'.tr(),
-                    isDark: isDark,
-                    onTap: () {}, // Handled by Switch
-                    trailing: Switch(
-                      value: isDark,
-                      activeColor: primaryDarkBlue,
-                      activeTrackColor: primaryDarkBlue.withOpacity(0.3),
-                      onChanged: (val) {
-                        Provider.of<ThemeProvider>(
-                          context,
-                          listen: false,
-                        ).toggleTheme(val);
-                      },
-                    ),
-                  ),
+
                   _buildProfileTile(
                     icon: Icons.settings_outlined,
                     title: 'profile.settings_preferences'.tr(),

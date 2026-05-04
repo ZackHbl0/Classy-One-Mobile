@@ -143,7 +143,7 @@ class _PlanningPageState extends State<PlanningPage> {
           children: [
             // ── Header ──────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -158,6 +158,8 @@ class _PlanningPageState extends State<PlanningPage> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 20),
 
             // ── Static Weekday Tabs ──────────────────────────────────
             Padding(
@@ -239,10 +241,7 @@ class _PlanningPageState extends State<PlanningPage> {
                       child: todaysClasses.isEmpty
                           ? _buildEmptyState()
                           : ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
+                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
                               itemCount: todaysClasses.length,
                               itemBuilder: (context, index) =>
                                   _buildTimelineCard(

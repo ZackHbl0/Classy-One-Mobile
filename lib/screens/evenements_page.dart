@@ -79,7 +79,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -267,15 +267,22 @@ class _EvenementsPageState extends State<EvenementsPage> {
                     event.imageUrl != null && event.imageUrl!.startsWith('http')
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          event.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.celebration_outlined,
-                                color: primaryBlue,
-                                size: 20,
-                              ),
+                        child: Builder(
+                          builder: (context) {
+                            debugPrint('Trying to load image: ${event.imageUrl}');
+                            return Image.network(
+                              event.imageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint('Image load error for ${event.imageUrl}: $error');
+                                return const Icon(
+                                  Icons.celebration_outlined,
+                                  color: primaryBlue,
+                                  size: 20,
+                                );
+                              },
+                            );
+                          }
                         ),
                       )
                     : const Icon(

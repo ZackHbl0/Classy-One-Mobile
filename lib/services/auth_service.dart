@@ -7,9 +7,9 @@ import '../models/student.dart';
 
 class AuthService {
   // Update to the new Laravel API path
-  // static const String baseUrl = "http://[IP_ADDRESS]/osbt-api/public/api";
+  static const String baseUrl = "http://192.168.100.55/osbt-api/public/api";
 
-  static const String baseUrl = "http://classy-one.test/api";
+  //static const String baseUrl = "http://classy-one.test/api";
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -20,9 +20,9 @@ class AuthService {
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
-
+     
   Future<Map<String, dynamic>> login(
-    String matricule,
+    String matricule, 
     String password, {
     String fcmToken = '',
   }) async {

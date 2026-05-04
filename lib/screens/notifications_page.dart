@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/notification_provider.dart';
 import '../widgets/screen_header.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -23,82 +24,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
     'Urgent',
   ];
 
-  List<dynamic> _notifications = [];
-  bool _isLoading = true;
-  String _errorMessage = '';
-  final AuthService _authService = AuthService();
-
   @override
   void initState() {
     super.initState();
-    _fetchNotifications();
-  }
-
-  Future<void> _fetchNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
-    final idStudent = prefs.getInt('idStudent') ?? 0;
-
-    if (idStudent == 0) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Utilisateur non connecté';
-        });
+    // Notifications are already fetched by the Dashboard, but we can refresh them
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final idStudent = prefs.getInt('idStudent') ?? 0;
+      if (idStudent != 0 && mounted) {
+        context.read<NotificationProvider>().fetchNotifications(idStudent);
       }
-      return;
-    }
-
-    final result = await _authService.getNotifications(idStudent);
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (result['success'] == true) {
-          _notifications = result['data'] ?? [];
-        } else {
-          _errorMessage =
-              result['message'] ??
-              'Erreur lors du chargement des notifications';
-        }
-      });
-    }
+    });
   }
 
-  Future<void> _markAllAsRead() async {
+  Future<void> _markAllAsRead(NotificationProvider provider) async {
     final prefs = await SharedPreferences.getInstance();
     final idStudent = prefs.getInt('idStudent') ?? 0;
 
     if (idStudent != 0) {
-      final result = await _authService.markNotificationsRead(idStudent);
-      if (result['success'] == true) {
-        setState(() {
-          for (var notif in _notifications) {
-            notif['isRead'] = true;
-          }
-        });
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Erreur lors du marquage'),
-            ),
-          );
-        }
+      final success = await provider.markAllAsRead(idStudent);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors du marquage'),
+          ),
+        );
       }
     }
   }
 
-  int get _unreadCount {
-    return _notifications.where((n) => n['isRead'] != true).length;
-  }
-
-  List<dynamic> get _filteredNotifications {
+  List<dynamic> _getFilteredNotifications(NotificationProvider provider) {
     if (_selectedFilter == 'Toutes') {
-      return _notifications;
+      return provider.notifications;
     } else if (_selectedFilter == 'Non lues') {
-      return _notifications.where((n) => n['isRead'] != true).toList();
+      return provider.notifications.where((n) => n['isRead'] != true).toList();
     } else {
-      return _notifications
+      return provider.notifications
           .where((n) => n['categorie'] == _selectedFilter)
           .toList();
     }
@@ -144,10 +105,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
     const slateGrey = Color(0xFF64748B);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+    return Consumer<NotificationProvider>(
+      builder: (context, provider, child) {
+        final filteredList = _getFilteredNotifications(provider);
+        final unreadCount = provider.unreadCount;
+
+        return Scaffold(
+          backgroundColor: isDark
+              ? const Color(0xFF0F172A)
+              : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -175,11 +141,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
                       ),
                       TextButton(
-                        onPressed: _unreadCount > 0 ? _markAllAsRead : null,
+                        onPressed: unreadCount > 0 ? () => _markAllAsRead(provider) : null,
                         child: Text(
                           'Tout marquer lu',
                           style: TextStyle(
-                            color: _unreadCount > 0
+                            color: unreadCount > 0
                                 ? primaryBlue
                                 : slateGrey.withOpacity(0.5),
                             fontWeight: FontWeight.bold,
@@ -190,7 +156,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ],
                   ),
                   Text(
-                    '$_unreadCount non lue(s)',
+                    '$unreadCount non lue(s)',
                     style: const TextStyle(
                       color: slateGrey,
                       fontSize: 14,
@@ -254,25 +220,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
             // Notifications List Area
             Expanded(
-              child: _isLoading
+              child: provider.isLoading
                   ? _buildShimmerEffect()
-                  : _errorMessage.isNotEmpty
+                  : provider.errorMessage.isNotEmpty
                   ? Center(
                       child: Text(
-                        _errorMessage,
+                        provider.errorMessage,
                         style: const TextStyle(color: Colors.red),
                       ),
                     )
-                  : _filteredNotifications.isEmpty
+                  : filteredList.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       physics: const BouncingScrollPhysics(),
-                      itemCount: _filteredNotifications.length,
+                      itemCount: filteredList.length,
                       itemBuilder: (context, index) {
                         return _buildNotificationCard(
-                          _filteredNotifications[index],
+                          filteredList[index],
                           index,
+                          provider,
                         );
                       },
                     ),
@@ -281,6 +248,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ),
       ),
     );
+      },
+    );
   }
 
   Widget _buildEmptyState() {
@@ -288,18 +257,33 @@ class _NotificationsPageState extends State<NotificationsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 64,
-            color: Colors.grey.withOpacity(0.5),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.done_all_rounded,
+              size: 64,
+              color: const Color(0xFF203B68).withOpacity(0.5),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Text(
-            'Aucune notification trouvée.',
+            'Vous êtes à jour !',
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Aucune notification.',
             style: TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+              fontSize: 15,
             ),
           ),
         ],
@@ -322,8 +306,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  Widget _buildNotificationCard(dynamic notif, int index) {
-    final bool isRead = notif['isRead'] ?? false;
+  Widget _buildNotificationCard(dynamic notif, int index, NotificationProvider provider) {
+    final rawIsRead = notif['isRead'];
+    final bool isRead = rawIsRead == true || rawIsRead == 1;
     final String category = notif['categorie'] ?? 'Info';
     final bool isUrgent = category == 'Urgent';
     final Color categoryColor = _getCategoryColor(category);
@@ -338,39 +323,57 @@ class _NotificationsPageState extends State<NotificationsPage> {
       key: Key(notif['id'].toString()),
       direction: DismissDirection.endToStart,
       background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsetsDirectional.only(end: 30),
         alignment: AlignmentDirectional.centerEnd,
-        padding: const EdgeInsetsDirectional.only(end: 20),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
+          color: const Color(0xFFFEE2E2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete_outline, color: Colors.redAccent),
-      ),
-      onDismissed: (direction) {
-        setState(() {
-          _notifications.removeWhere((n) => n['id'] == notif['id']);
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isRead
-                ? const Color(0xFFF1F5F9)
-                : primaryBlue.withOpacity(0.1),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 28),
+            const SizedBox(height: 4),
+            const Text(
+              'Supprimer',
+              style: TextStyle(
+                color: Color(0xFFDC2626),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
-        child: ClipRRect(
+      ),
+      onDismissed: (direction) {
+        provider.removeNotification(notif['id']);
+      },
+      child: InkWell(
+        onTap: () {
+          _showNotificationDetails(context, notif, provider);
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isRead ? Colors.white : const Color(0xFFF0F7FF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isRead
+                  ? const Color(0xFFF1F5F9)
+                  : const Color(0xFFBFDBFE),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Row(
             children: [
@@ -498,6 +501,176 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ),
       ),
+      ),
+    );
+  }
+
+  void _showNotificationDetails(BuildContext context, dynamic notif, NotificationProvider provider) async {
+    final rawIsRead = notif['isRead'];
+    final bool isRead = rawIsRead == true || rawIsRead == 1;
+    final String category = notif['categorie'] ?? 'Info';
+    final Color categoryColor = _getCategoryColor(category);
+    final String dateStr = notif['dateStr'] ?? '';
+    final String title = notif['titre'] ?? '';
+    final String message = notif['message'] ?? '';
+    final String sender = notif['sender'] ?? 'Administration';
+    const primaryBlue = Color(0xFF203B68);
+    const slateGrey = Color(0xFF64748B);
+
+    // Mark as read if it's unread
+    if (!isRead) {
+      final prefs = await SharedPreferences.getInstance();
+      final idStudent = prefs.getInt('idStudent') ?? 0;
+      if (idStudent != 0) {
+        provider.markAsRead(idStudent, notif['id']);
+      }
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Header info
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_getCategoryIcon(category), color: categoryColor, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            category,
+                            style: TextStyle(
+                              color: categoryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        color: slateGrey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Sender
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 16, color: slateGrey),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Envoyé par : $sender',
+                      style: const TextStyle(
+                        color: slateGrey,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Message Body
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                  ),
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      color: Color(0xFF334155),
+                      fontSize: 15,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Close Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryBlue,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Fermer',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
