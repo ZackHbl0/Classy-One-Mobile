@@ -21,8 +21,10 @@ class ContactSupportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF203B68);
-    const bgColor = Color(0xFFF8F9FA);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryBlue = isDark ? theme.primaryColor : const Color(0xFF203B68);
+    final bgColor = theme.scaffoldBackgroundColor;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -44,9 +46,9 @@ class ContactSupportPage extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: primaryBlue,
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
                 ),
@@ -96,8 +98,8 @@ class ContactSupportPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8, bottom: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 12),
                     child: Text(
                       "NOUS CONTACTER",
                       style: TextStyle(
@@ -110,7 +112,7 @@ class ContactSupportPage extends StatelessWidget {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -123,6 +125,7 @@ class ContactSupportPage extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildActionTile(
+                          context: context,
                           icon: FontAwesomeIcons.whatsapp,
                           iconColor: const Color(0xFF25D366),
                           title: "WhatsApp",
@@ -131,6 +134,7 @@ class ContactSupportPage extends StatelessWidget {
                           showBorder: true,
                         ),
                         _buildActionTile(
+                          context: context,
                           icon: Icons.phone_rounded,
                           iconColor: const Color(0xFF3B82F6),
                           title: "Appelez-nous",
@@ -139,6 +143,7 @@ class ContactSupportPage extends StatelessWidget {
                           showBorder: true,
                         ),
                         _buildActionTile(
+                          context: context,
                           icon: Icons.email_rounded,
                           iconColor: const Color(0xFFF59E0B),
                           title: "Email Support",
@@ -153,8 +158,8 @@ class ContactSupportPage extends StatelessWidget {
                   const SizedBox(height: 32),
 
                   // School Info Card
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8, bottom: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 12),
                     child: Text(
                       "INFORMATIONS ÉTABLISSEMENT",
                       style: TextStyle(
@@ -168,7 +173,7 @@ class ContactSupportPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -190,7 +195,7 @@ class ContactSupportPage extends StatelessWidget {
                                 color: primaryBlue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.location_on_rounded,
                                 color: primaryBlue,
                                 size: 22,
@@ -201,19 +206,19 @@ class ContactSupportPage extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     "Adresse Physique",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: Color(0xFF1E293B),
+                                      color: isDark ? Colors.white : const Color(0xFF1E293B),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
+                                  Text(
                                     "202 lotissement, Bd Haj Fateh\nCasablanca",
                                     style: TextStyle(
-                                      color: Color(0xFF64748B),
+                                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
                                       fontSize: 14,
                                       height: 1.5,
                                     ),
@@ -246,14 +251,14 @@ class ContactSupportPage extends StatelessWidget {
                                 color: primaryBlue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.access_time_filled_rounded,
                                 color: primaryBlue,
                                 size: 22,
                               ),
                             ),
                             const SizedBox(width: 16),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -262,14 +267,14 @@ class ContactSupportPage extends StatelessWidget {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: Color(0xFF1E293B),
+                                      color: isDark ? Colors.white : const Color(0xFF1E293B),
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
                                     "Lun - Sam : 08:00–21:00\nDim : 08:00–20:00",
                                     style: TextStyle(
-                                      color: Color(0xFF64748B),
+                                      color: isDark ? Colors.white70 : const Color(0xFF64748B),
                                       fontSize: 14,
                                       height: 1.5,
                                     ),
@@ -294,6 +299,7 @@ class ContactSupportPage extends StatelessWidget {
   }
 
   Widget _buildActionTile({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -301,6 +307,9 @@ class ContactSupportPage extends StatelessWidget {
     required VoidCallback onTap,
     required bool showBorder,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -310,9 +319,9 @@ class ContactSupportPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             border: showBorder
-                ? const Border(
+                ? Border(
                     bottom: BorderSide(
-                      color: Color(0xFFF1F5F9),
+                      color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
                       width: 1,
                     ),
                   )
@@ -339,17 +348,17 @@ class ContactSupportPage extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : const Color(0xFF64748B),
                         fontSize: 13,
                       ),
                     ),

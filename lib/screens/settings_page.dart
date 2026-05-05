@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/premium_switch.dart';
 import 'contact_support_page.dart';
 import 'about_page.dart';
 
@@ -19,22 +19,33 @@ class _SettingsPageState extends State<SettingsPage> {
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       backgroundColor: isDark
           ? const Color(0xFF0F172A)
-          : const Color(0xFFF8F9FA),
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
-          'settings.title'.tr(),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: const Text(
+          'Paramètres',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
         ),
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black87,
+        foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: _buildContent(settingsProvider, themeProvider, context, isDark),
+      body: _buildContent(
+        settingsProvider,
+        themeProvider,
+        context,
+        isDark,
+        primaryColor,
+      ),
     );
   }
 
@@ -43,99 +54,90 @@ class _SettingsPageState extends State<SettingsPage> {
     ThemeProvider themeProvider,
     BuildContext context,
     bool isDark,
+    Color primaryColor,
   ) {
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       physics: const BouncingScrollPhysics(),
       children: [
-
-
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader('settings.notifications'.tr(), isDark),
-            _buildSettingsCard([
-              _buildSwitchTile(
-                Icons.notifications_active_outlined,
-                'settings.enable_notifications'.tr(),
-                settingsProvider.notificationsEnabled,
-                (val) => settingsProvider.toggleNotifications(val),
-                isDark,
-                context,
-              ),
-              _buildSwitchTile(
-                Icons.event_outlined,
-                'settings.event_reminders'.tr(),
-                settingsProvider.eventRemindersEnabled,
-                (val) => settingsProvider.toggleEventReminders(val),
-                isDark,
-                context,
-              ),
-              _buildSwitchTile(
-                Icons.account_balance_wallet_outlined,
-                'settings.payment_reminders'.tr(),
-                settingsProvider.paymentRemindersEnabled,
-                (val) => settingsProvider.togglePaymentReminders(val),
-                isDark,
-                context,
-                showBorder: false,
-              ),
-            ], isDark),
-          ],
+        _buildSectionHeader(
+          'Notifications',
+          isDark,
+          primaryColor,
         ),
+        _buildSettingsCard([
+          _buildSwitchTile(
+            Icons.notifications_active_outlined,
+            'Activer les notifications',
+            settingsProvider.notificationsEnabled,
+            (val) => settingsProvider.toggleNotifications(val),
+            isDark,
+            context,
+          ),
+          _buildSwitchTile(
+            Icons.event_outlined,
+            'Rappels d\'événements',
+            settingsProvider.eventRemindersEnabled,
+            (val) => settingsProvider.toggleEventReminders(val),
+            isDark,
+            context,
+          ),
+          _buildSwitchTile(
+            Icons.account_balance_wallet_outlined,
+            'Rappels de paiement',
+            settingsProvider.paymentRemindersEnabled,
+            (val) => settingsProvider.togglePaymentReminders(val),
+            isDark,
+            context,
+            showBorder: false,
+          ),
+        ], isDark),
 
         const SizedBox(height: 32),
 
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader('settings.help_support'.tr(), isDark),
-            _buildSettingsCard([
-              _buildListTile(
-                Icons.headset_mic_outlined,
-                'settings.contact_admin'.tr(),
-                isDark,
+        _buildSectionHeader('Aide & Support', isDark, primaryColor),
+        _buildSettingsCard([
+          _buildListTile(
+            Icons.headset_mic_outlined,
+            'Contacter l\'administration',
+            isDark,
+            context,
+            onTap: () {
+              Navigator.push(
                 context,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ContactSupportPage(),
-                    ),
-                  );
-                },
-              ),
-              _buildListTile(
-                Icons.info_outline_rounded,
-                'settings.about_app'.tr(),
-                isDark,
+                MaterialPageRoute(builder: (_) => const ContactSupportPage()),
+              );
+            },
+          ),
+          _buildListTile(
+            Icons.info_outline_rounded,
+            'À propos de l\'application',
+            isDark,
+            context,
+            showBorder: false,
+            onTap: () {
+              Navigator.push(
                 context,
-                showBorder: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AboutPage()),
-                  );
-                },
-              ),
-            ], isDark),
-          ],
-        ),
+                MaterialPageRoute(builder: (_) => const AboutPage()),
+              );
+            },
+          ),
+        ], isDark),
         const SizedBox(height: 40),
       ],
     );
   }
 
-  Widget _buildSectionHeader(String title, bool isDark) {
+  Widget _buildSectionHeader(String title, bool isDark, Color primaryColor) {
     return Padding(
-      padding: const EdgeInsetsDirectional.only(bottom: 12, start: 8),
+      padding: const EdgeInsetsDirectional.only(bottom: 14, start: 8),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: Theme.of(context).primaryColor,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
+          color: isDark ? Colors.white54 : const Color(0xFF64748B),
+          fontSize: 14,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
         ),
       ),
     );
@@ -145,16 +147,22 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: isDark
+            ? Border.all(color: Colors.white.withOpacity(0.05))
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(children: children),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(children: children),
+      ),
     );
   }
 
@@ -165,13 +173,16 @@ class _SettingsPageState extends State<SettingsPage> {
     BuildContext context, {
     VoidCallback? onTap,
     bool showBorder = true,
-    String? trailingText,
+    bool isDestructive = false,
   }) {
+    final color = isDestructive
+        ? Colors.redAccent
+        : (isDark ? Colors.white : const Color(0xFF1E293B));
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
             border: showBorder
@@ -179,25 +190,30 @@ class _SettingsPageState extends State<SettingsPage> {
                     bottom: BorderSide(
                       color: isDark
                           ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
+                          : const Color(0xFFF1F5F9),
                       width: 1,
                     ),
                   )
                 : null,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isDestructive
+                      ? Colors.redAccent.withOpacity(0.1)
+                      : Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   icon,
-                  color: Theme.of(context).primaryColor,
-                  size: 20,
+                  color: isDestructive
+                      ? Colors.redAccent
+                      : Theme.of(context).primaryColor,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 16),
@@ -205,25 +221,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: color,
                   ),
                 ),
               ),
-              if (trailingText != null)
-                Text(
-                  trailingText,
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black54,
-                    fontSize: 14,
-                  ),
-                ),
-              const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: isDark ? Colors.white30 : Colors.black26,
+                size: 14,
+                color: isDestructive
+                    ? Colors.redAccent.withOpacity(0.3)
+                    : (isDark ? Colors.white24 : Colors.black26),
               ),
             ],
           ),
@@ -241,57 +250,45 @@ class _SettingsPageState extends State<SettingsPage> {
     BuildContext context, {
     bool showBorder = true,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          border: showBorder
-              ? Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.05)
-                        : Colors.black.withOpacity(0.05),
-                    width: 1,
-                  ),
-                )
-              : null,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: isDark ? Colors.white : Colors.black87,
+    return Container(
+      decoration: BoxDecoration(
+        border: showBorder
+            ? Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : const Color(0xFFF1F5F9),
+                  width: 1,
                 ),
+              )
+            : null,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: Theme.of(context).primaryColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
               ),
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: Theme.of(context).primaryColor,
-            ),
-          ],
-        ),
+          ),
+          PremiumSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }
-
-
 }

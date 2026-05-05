@@ -16,12 +16,41 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    DashboardPage(),
-    PlanningPage(),
-    EvenementsPage(),
-    PaiementPage(),
-    DocumentsPage(),
+  final List<Widget> _pages = [
+    const DashboardPage(),
+    const PlanningPage(),
+    const EvenementsPage(),
+    const PaiementPage(showBackButton: false),
+    const DocumentsPage(),
+  ];
+
+  // ── Icon pairs: outline (inactive) → filled (active) ───────────────────────
+  static const List<NavBarItem> _navItems = [
+    NavBarItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Accueil',
+    ),
+    NavBarItem(
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today_rounded,
+      label: 'Agenda',
+    ),
+    NavBarItem(
+      icon: Icons.event_outlined,
+      activeIcon: Icons.event_rounded,
+      label: 'Événements',
+    ),
+    NavBarItem(
+      icon: Icons.credit_card_outlined,
+      activeIcon: Icons.credit_card_rounded,
+      label: 'Paiements',
+    ),
+    NavBarItem(
+      icon: Icons.description_outlined,
+      activeIcon: Icons.description_rounded,
+      label: 'Documents',
+    ),
   ];
 
   @override
@@ -29,45 +58,18 @@ class _MainScreenState extends State<MainScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBody: false, // Page content stops above the navbar
+      extendBody: false,
       backgroundColor: isDark
           ? const Color(0xFF0F172A)
           : const Color(0xFFF8F9FE),
-      body: SafeArea(child: _pages[_currentIndex]),
+      body: SafeArea(
+        bottom: false,
+        child: IndexedStack(index: _currentIndex, children: _pages),
+      ),
       bottomNavigationBar: CustomModernNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: [
-          NavBarItem(
-            icon: Icons.home_rounded,
-            activeIcon: Icons.home_rounded,
-            label: '',
-          ),
-          NavBarItem(
-            icon: Icons.calendar_month_rounded,
-            activeIcon: Icons.calendar_month_rounded,
-            label: '',
-          ),
-          NavBarItem(
-            icon: Icons.event_rounded,
-            activeIcon: Icons.event_rounded,
-            label: '',
-          ),
-          NavBarItem(
-            icon: Icons.credit_card_rounded,
-            activeIcon: Icons.credit_card_rounded,
-            label: '',
-          ),
-          NavBarItem(
-            icon: Icons.description_rounded,
-            activeIcon: Icons.description_rounded,
-            label: '',
-          ),
-        ],
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: _navItems,
       ),
     );
   }

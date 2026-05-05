@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'password_change_page.dart';
 import 'phone_update_page.dart';
 
@@ -15,9 +14,9 @@ class EditProfilePage extends StatelessWidget {
           ? const Color(0xFF0F172A)
           : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(
-          'profile.edit_profile'.tr(),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: const Text(
+          'Modifier le profil',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
@@ -31,7 +30,7 @@ class EditProfilePage extends StatelessWidget {
           _buildSettingsCard([
             _buildListTile(
               Icons.lock_outline_rounded,
-              'settings.change_password'.tr(),
+              'Changer le mot de passe',
               isDark,
               context,
               onTap: () {
@@ -43,7 +42,7 @@ class EditProfilePage extends StatelessWidget {
             ),
             _buildListTile(
               Icons.phone_iphone_rounded,
-              'settings.edit_phone'.tr(),
+              'Modifier le téléphone',
               isDark,
               context,
               showBorder: false,

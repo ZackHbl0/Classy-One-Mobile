@@ -23,11 +23,14 @@ class DocumentDetailSheet extends StatelessWidget {
         request['admin_message'] ?? 'Aucun message de l\'administration.';
     final String? pdfUrl = request['pdf_url'];
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -39,7 +42,7 @@ class DocumentDetailSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: isDark ? Colors.white24 : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -56,10 +59,10 @@ class DocumentDetailSheet extends StatelessWidget {
                   children: [
                     Text(
                       request['document_type'] ?? 'Document',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -89,12 +92,12 @@ class DocumentDetailSheet extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Admin Message Section
-          const Text(
+          Text(
             'Message de l\'administration',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+              color: isDark ? Colors.white : const Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 12),
@@ -102,15 +105,15 @@ class DocumentDetailSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
             ),
             child: Text(
               adminMessage,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF475569),
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
                 height: 1.5,
               ),
             ),
@@ -127,12 +130,12 @@ class DocumentDetailSheet extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              child: const Text(
+              child: Text(
                 'Ce document sera disponible au téléchargement une fois validé.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF94A3B8),
+                  color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -145,10 +148,10 @@ class DocumentDetailSheet extends StatelessWidget {
             width: double.infinity,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Fermer',
                 style: TextStyle(
-                  color: Color(0xFF64748B),
+                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -225,13 +228,8 @@ class DocumentDetailSheet extends StatelessWidget {
 
     Uri url;
     if (directUrl != null && directUrl.isNotEmpty) {
-      // If it's a relative path, prepend base URL
-      if (directUrl.startsWith('/')) {
-        final String base = AuthService.baseUrl.replaceAll('/api', '');
-        url = Uri.parse('$base$directUrl?token=$token');
-      } else {
-        url = Uri.parse('$directUrl?token=$token');
-      }
+      // Laravel now returns an absolute URL, so we just append the token
+      url = Uri.parse('$directUrl?token=$token');
     } else {
       // Fallback to secure generation endpoint
       url = Uri.parse(
@@ -239,14 +237,19 @@ class DocumentDetailSheet extends StatelessWidget {
       );
     }
 
-    if (await canLaunchUrl(url)) {
+    try {
+      // Using externalApplication is more robust for PDFs on most devices
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible d\'ouvrir le lien de téléchargement'),
-        ),
-      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible d\'ouvrir le lien de téléchargement'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

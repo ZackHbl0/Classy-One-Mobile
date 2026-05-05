@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import '../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/screen_header.dart';
@@ -58,7 +57,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
             padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
             physics: const BouncingScrollPhysics(),
             children: [
-              ScreenHeader(title: 'documents.title'.tr()),
+              const ScreenHeader(title: 'Mes Documents'),
               const SizedBox(height: 24),
 
               // New Request Button
@@ -67,19 +66,23 @@ class _DocumentsPageState extends State<DocumentsPage> {
               const SizedBox(height: 32),
 
               Text(
-                'documents.recent_requests'.tr(),
+                'Demandes récentes',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
 
               const SizedBox(height: 16),
 
               if (_isLoading)
-                const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF203B68)),
+                Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).primaryColor
+                        : const Color(0xFF203B68),
+                  ),
                 )
               else if (_errorMessage.isNotEmpty)
                 Center(
@@ -142,14 +145,14 @@ class _DocumentsPageState extends State<DocumentsPage> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Row(
+        child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.add_circle_outline, color: Colors.white),
-            const SizedBox(width: 12),
+            Icon(Icons.add_circle_outline, color: Colors.white),
+            SizedBox(width: 12),
             Text(
-              'documents.new_request'.tr(),
-              style: const TextStyle(
+              'Nouvelle demande',
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -182,16 +185,22 @@ class _DocumentsPageState extends State<DocumentsPage> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.03,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.05)
+              : const Color(0xFFF1F5F9),
+        ),
       ),
       child: InkWell(
         onTap: () => _showRequestDetail(req),
@@ -205,10 +214,10 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 Expanded(
                   child: Text(
                     req['document_type'] ?? 'Document',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                 ),
@@ -226,17 +235,19 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 const SizedBox(width: 6),
                 Text(
                   'Demandé le : $dateStr',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white38
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
             if (req['urgency'] == 'urgent') ...[
               const SizedBox(height: 8),
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Icon(Icons.speed, size: 14, color: Color(0xFFEF4444)),
                   SizedBox(width: 6),
                   Text(
@@ -266,17 +277,20 @@ class _DocumentsPageState extends State<DocumentsPage> {
       child: OutlinedButton.icon(
         onPressed: () async {
           final prefs = await SharedPreferences.getInstance();
-          final token = prefs.getString('token') ?? '';
+          final token = prefs.getString('auth_token') ?? '';
           final id = req['id'];
-          // Use the secure download endpoint.
-          // For token auth, we usually fetch first, but for simple launch we append token or use a temporary link.
+
+          // Use direct PDF URL if available, otherwise fallback to generation endpoint
+          final String? pdfUrl = req['pdf_url'];
           final url = Uri.parse(
-            '${AuthService.baseUrl}/documents/$id/download?token=$token',
+            pdfUrl != null && pdfUrl.isNotEmpty
+                ? '$pdfUrl?token=$token'
+                : '${AuthService.baseUrl}/documents/$id/download?token=$token',
           );
 
-          if (await canLaunchUrl(url)) {
+          try {
             await launchUrl(url, mode: LaunchMode.externalApplication);
-          } else {
+          } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Impossible d\'ouvrir le lien de téléchargement'),
@@ -293,6 +307,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF10B981).withOpacity(0.05)
+              : Colors.transparent,
         ),
       ),
     );
@@ -317,19 +334,19 @@ class _DocumentsPageState extends State<DocumentsPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         children: [
-          const SizedBox(height: 48),
+          SizedBox(height: 48),
           Icon(
             Icons.description_outlined,
             size: 80,
-            color: const Color(0xFF94A3B8).withOpacity(0.2),
+            color: Color(0x3394A3B8),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
-            'documents.no_requests'.tr(),
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+            'Aucune demande effectuée',
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
           ),
         ],
       ),

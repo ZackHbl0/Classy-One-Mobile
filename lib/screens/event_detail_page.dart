@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/event_model.dart';
 import '../services/auth_service.dart';
 import 'package:intl/intl.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EventDetailPage extends StatefulWidget {
@@ -211,6 +210,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     widget.event.dateEvent != null
                         ? DateFormat(
                             'EEEE, dd MMM yyyy - HH:mm',
+                            'fr_FR',
                           ).format(widget.event.dateEvent!)
                         : 'À venir',
                   ),

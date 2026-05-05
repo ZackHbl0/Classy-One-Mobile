@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/premium_switch.dart';
 import 'login_page.dart';
 import 'settings_page.dart';
 import 'edit_profile_page.dart';
@@ -41,8 +41,6 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     }
   }
-
-
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
@@ -127,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 30),
                   Text(
-                    'profile.title'.tr(),
+                    'Mon Profil',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -193,13 +191,36 @@ class _ProfilePageState extends State<ProfilePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              _classe.isNotEmpty ? _classe : 'Aucune classe',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white38 : Colors.grey,
+                            if (_classe.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Aucune classe',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark ? Colors.white38 : slateGrey,
+                                    fontWeight: FontWeight.w600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              )
+                            else
+                              Text(
+                                _classe,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.white38 : Colors.grey,
+                                ),
                               ),
-                            ),
                             const SizedBox(width: 8),
                             const Icon(
                               Icons.circle,
@@ -208,7 +229,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _matricule.isNotEmpty ? _matricule : 'Matricule inconnu',
+                              _matricule.isNotEmpty
+                                  ? _matricule
+                                  : 'Matricule inconnu',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: isDark ? Colors.white38 : Colors.grey,
@@ -217,7 +240,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -226,7 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               size: 14,
                               color: Colors.grey,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 10),
                             Text(
                               _telephone,
                               style: TextStyle(
@@ -249,7 +272,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ).then((_) => _loadUserData());
                           },
                           icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: Text('profile.edit'.tr()),
+                          label: const Text('Modifier le profil'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryDarkBlue,
                             foregroundColor: Colors.white,
@@ -270,10 +293,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 32),
 
                   // Individual Settings Rows
-
                   _buildProfileTile(
                     icon: Icons.settings_outlined,
-                    title: 'profile.settings_preferences'.tr(),
+                    title: 'Paramètres & Préférences',
                     isDark: isDark,
                     onTap: () {
                       Navigator.push(
@@ -284,9 +306,32 @@ class _ProfilePageState extends State<ProfilePage> {
                       ).then((_) => _loadUserData());
                     },
                   ),
+
+                  // NEW: Dark Mode Toggle Row
+                  _buildProfileTile(
+                    icon: Icons.dark_mode_outlined,
+                    title: 'Mode Sombre',
+                    isDark: isDark,
+                    onTap: () {
+                      Provider.of<ThemeProvider>(
+                        context,
+                        listen: false,
+                      ).toggleTheme();
+                    },
+                    trailing: PremiumSwitch(
+                      value: isDark,
+                      onChanged: (val) {
+                        Provider.of<ThemeProvider>(
+                          context,
+                          listen: false,
+                        ).toggleTheme();
+                      },
+                    ),
+                  ),
+
                   _buildProfileTile(
                     icon: Icons.logout_rounded,
-                    title: 'profile.logout'.tr(),
+                    title: 'Déconnexion',
                     isDark: isDark,
                     isDestructive: true,
                     onTap: _logout,
@@ -310,15 +355,19 @@ class _ProfilePageState extends State<ProfilePage> {
     bool isDestructive = false,
   }) {
     const primaryDarkBlue = Color(0xFF1A365D);
+    const modernRed = Color(0xFFFF5252);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: isDark
+            ? Border.all(color: Colors.white.withOpacity(0.05))
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -326,20 +375,20 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Icon(
           icon,
           color: isDestructive
-              ? Colors.redAccent
+              ? modernRed
               : (isDark ? Colors.white70 : primaryDarkBlue),
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             fontSize: 16,
             color: isDestructive
-                ? Colors.redAccent
+                ? modernRed
                 : (isDark ? Colors.white : primaryDarkBlue.withOpacity(0.9)),
           ),
         ),
@@ -349,7 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Icons.arrow_forward_ios_rounded,
               size: 14,
               color: isDestructive
-                  ? Colors.redAccent.withOpacity(0.5)
+                  ? modernRed.withOpacity(0.5)
                   : (isDark ? Colors.white24 : Colors.black26),
             ),
       ),

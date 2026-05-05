@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../services/auth_service.dart';
 import 'evenements_page.dart';
@@ -9,12 +8,10 @@ import 'notifications_page.dart';
 import 'paiement_page.dart';
 import 'planning_page.dart';
 import 'attendance_page.dart';
-import 'documents_page.dart';
-import 'profile_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
 import '../providers/notification_provider.dart';
-import '../widgets/notification_bell.dart';
+import '../widgets/global_app_header.dart';
 import '../models/course.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -75,10 +72,9 @@ class _DashboardPageState extends State<DashboardPage> {
         context.read<NotificationProvider>().fetchNotifications(_idStudent);
       }
     } else {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'dashboard.user_not_connected'.tr();
-      });
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     }
   }
 
@@ -89,6 +85,18 @@ class _DashboardPageState extends State<DashboardPage> {
     final result = await _authService.getDashboardData(_idStudent);
 
     if (mounted) {
+      // 1. Handle Session Expiration outside setState
+      if (result['success'] == false &&
+          result['message'] == 'Session expired') {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+        return;
+      }
+
+      // 2. Update UI state
       setState(() {
         _isLoading = false;
 
@@ -148,7 +156,8 @@ class _DashboardPageState extends State<DashboardPage> {
           }
           _errorMessage = '';
         } else {
-          _errorMessage = result['message'] ?? 'dashboard.data_load_error'.tr();
+          _errorMessage =
+              result['message'] ?? 'Erreur de chargement des données';
         }
       });
     }
@@ -243,18 +252,18 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                       const Spacer(),
-                      Row(
+                      const Row(
                         children: [
                           Text(
-                            'dashboard.see_details'.tr(),
-                            style: const TextStyle(
+                            'Voir détails',
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
+                          SizedBox(width: 4),
+                          Icon(
                             Icons.arrow_forward_rounded,
                             color: Colors.white,
                             size: 14,
@@ -279,8 +288,12 @@ class _DashboardPageState extends State<DashboardPage> {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          color: Theme.of(context).cardColor,
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFF1F5F9),
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -369,15 +382,25 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            course.matiere,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    course.matiere,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                ],
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 10),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
@@ -491,8 +514,8 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -518,19 +541,22 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading && _todaySessions.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+          child: CircularProgressIndicator(color: theme.primaryColor),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _fetchDashboardData,
-        color: const Color(0xFF6366F1),
+        color: theme.primaryColor,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 30),
@@ -548,12 +574,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 12),
                     _buildStatsDots(),
                     const SizedBox(height: 28),
-                    _buildSectionHeader('CURSUS DU JOUR', () {}),
+                    _buildSectionHeader(
+                      'COURS DU JOUR',
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PlanningPage(),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _buildHeroPanel(),
                     const SizedBox(height: 28),
                     _buildSectionHeader(
-                      'dashboard.urgent_notifications'.tr(),
+                      'NOTIFICATIONS URGENTES',
                       () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -564,10 +598,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 16),
                     _buildUrgentNotification(),
                     const SizedBox(height: 28),
-                    _buildSectionHeader(
-                      'dashboard.recent_activity'.tr(),
-                      () {},
-                    ),
+                    _buildSectionHeader('ACTIVITÉ RÉCENTE', null),
                     const SizedBox(height: 16),
                     _buildActivityFeed(),
                   ],
@@ -581,114 +612,19 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHeader() {
-    return Padding(
+    // Compose subtitle from available info
+    final parts = [
+      if (_classe.isNotEmpty) _classe,
+      if (_filiere.isNotEmpty) _filiere,
+    ];
+    final subtitle = parts.join(' • ');
+
+    return GlobalAppHeader(
+      greeting: 'Bonjour,',
+      userName: '$_prenom $_nom'.trim(),
+      subtitle: subtitle.isNotEmpty ? subtitle : null,
+      avatarUrl: null, // swap for a real URL when backend provides one
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6366F1).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                _nom.isNotEmpty ? _nom[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${'dashboard.greeting'.tr()}, $_prenom',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                if (_classe.isNotEmpty || _filiere.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      '${_classe}${_classe.isNotEmpty && _filiere.isNotEmpty ? " • " : ""}${_filiere}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Material(
-            color: Colors.white,
-            shape: const CircleBorder(),
-            elevation: 2,
-            shadowColor: Colors.black12,
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsPage(),
-                ),
-              ),
-              borderRadius: BorderRadius.circular(50),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                child: const NotificationBell(
-                  iconColor: Color(0xFF1E293B),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: Colors.white,
-            shape: const CircleBorder(),
-            elevation: 2,
-            shadowColor: Colors.black12,
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
-              ),
-              borderRadius: BorderRadius.circular(50),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                child: const Icon(
-                  Icons.person_outline_rounded,
-                  color: Color(0xFF1E293B),
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -756,7 +692,9 @@ class _DashboardPageState extends State<DashboardPage> {
           colors: [const Color(0xFFF87171), const Color(0xFFEF4444)],
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const PaiementPage()),
+            MaterialPageRoute(
+              builder: (context) => const PaiementPage(showBackButton: true),
+            ),
           ),
         ),
       ],
@@ -783,30 +721,31 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title, VoidCallback onTap) {
+  Widget _buildSectionHeader(String title, VoidCallback? onTap) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF64748B),
-            letterSpacing: 1,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+            letterSpacing: 0.5,
           ),
         ),
-        TextButton(
-          onPressed: onTap,
-          child: Text(
-            'dashboard.see_all'.tr(),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6366F1),
+        if (onTap != null)
+          TextButton(
+            onPressed: onTap,
+            child: const Text(
+              'Voir tout',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6366F1),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -818,9 +757,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFEF4444).withOpacity(0.1)
+            : const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFEE2E2)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFEF4444).withOpacity(0.3)
+              : const Color(0xFFFEE2E2),
+        ),
       ),
       child: Row(
         children: [
@@ -874,19 +819,23 @@ class _DashboardPageState extends State<DashboardPage> {
             break;
           case 'attendance':
             icon = Icons.person_off_outlined;
-            color = const Color(0xFFEF4444);
+            color = const Color(0xFFF59E0B);
+            break;
+          case 'event':
+            icon = Icons.event_outlined;
+            color = const Color(0xFF3B82F6);
             break;
           default:
-            icon = Icons.notifications_none_outlined;
+            icon = Icons.info_outline;
             color = const Color(0xFF64748B);
         }
 
         return _buildActivityItem(
           icon: icon,
           color: color,
-          title: item['title'],
-          subtitle: item['subtitle'],
-          time: item['date_formattee'],
+          title: item['title'] ?? '',
+          subtitle: item['subtitle'] ?? '',
+          time: item['date_formattee'] ?? '',
         );
       }).toList(),
     );

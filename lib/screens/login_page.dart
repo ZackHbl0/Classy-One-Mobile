@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
@@ -21,6 +20,28 @@ class _LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedMatricule = prefs.getString('remembered_matricule') ?? '';
+    final savedPassword = prefs.getString('remembered_password') ?? '';
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+
+    if (rememberMe) {
+      setState(() {
+        _rememberMe = true;
+        _matriculeController.text = savedMatricule;
+        _passwordController.text = savedPassword;
+      });
+    }
+  }
 
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
@@ -35,6 +56,58 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Mot de passe oublié ?',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1F3D),
+            ),
+          ),
+          content: const Text(
+            'Veuillez contacter l\'administration ou le support technique de l\'OSBT pour réinitialiser votre mot de passe.',
+            style: TextStyle(color: Colors.black87),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Fermer',
+                style: TextStyle(
+                  color: Color(0xFF1A1F3D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _launchURL(
+                  'https://api.whatsapp.com/send/?phone=%2B212661363127',
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A1F3D),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Contacter Support'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _login() async {
@@ -65,6 +138,23 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString('telephone', student.telephone);
         }
 
+        // Save or clear remembered credentials based on state
+        if (_rememberMe) {
+          await prefs.setString(
+            'remembered_matricule',
+            _matriculeController.text.trim(),
+          );
+          await prefs.setString(
+            'remembered_password',
+            _passwordController.text,
+          );
+          await prefs.setBool('remember_me', true);
+        } else {
+          await prefs.remove('remembered_matricule');
+          await prefs.remove('remembered_password');
+          await prefs.setBool('remember_me', false);
+        }
+
         if (!mounted) return;
 
         Navigator.pushReplacement(
@@ -84,8 +174,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF1A1F3D); 
-    const lightBg = Color(0xFFF1F5F9); 
+    const primaryBlue = Color(0xFF1A1F3D);
+    const lightBg = Color(0xFFF1F5F9);
 
     return Scaffold(
       backgroundColor: lightBg,
@@ -96,11 +186,7 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE2E8F0),
-              Color(0xFFF8FAFC),
-              Color(0xFFE2E8F0),
-            ],
+            colors: [Color(0xFFE2E8F0), Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
           ),
         ),
         child: SafeArea(
@@ -120,14 +206,21 @@ class _LoginPageState extends State<LoginPage> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 100), // Increased space to push card down and fill gap
+                const SizedBox(
+                  height: 100,
+                ), // Increased space to push card down and fill gap
 
                 ClipRRect(
                   borderRadius: BorderRadius.circular(35),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(28, 40, 28, 40), // Balanced internal padding
+                      padding: const EdgeInsets.fromLTRB(
+                        28,
+                        40,
+                        28,
+                        40,
+                      ), // Balanced internal padding
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(35),
@@ -148,10 +241,10 @@ class _LoginPageState extends State<LoginPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '${'login.welcome'.tr()}\n${'login.login_now'.tr()}',
+                            const Text(
+                              'Bienvenue\nConnectez-vous',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
                                 color: primaryBlue,
@@ -164,9 +257,9 @@ class _LoginPageState extends State<LoginPage> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'login.matricule'.tr(),
-                                  style: const TextStyle(
+                                const Text(
+                                  'Matricule',
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.black54,
@@ -175,14 +268,23 @@ class _LoginPageState extends State<LoginPage> {
                                 const SizedBox(height: 8),
                                 _buildStyledField(
                                   controller: _matriculeController,
-                                  hintText: 'Enter your matricule',
+                                  hintText: 'Entrez votre matricule',
                                   icon: Icons.person_outline,
                                   obscureText: false,
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  keyboardType: TextInputType.text,
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Veuillez entrer votre matricule';
+                                    }
+                                    return null;
+                                  },
                                 ),
                                 const SizedBox(height: 20),
-                                Text(
-                                  'login.password'.tr(),
-                                  style: const TextStyle(
+                                const Text(
+                                  'Mot de passe',
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.black54,
@@ -200,45 +302,111 @@ class _LoginPageState extends State<LoginPage> {
                                       _obscurePassword = !_obscurePassword;
                                     });
                                   },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Veuillez entrer votre mot de passe';
+                                    }
+                                    if (value.length < 4) {
+                                      return 'Le mot de passe doit contenir au moins 4 caractères';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: GestureDetector(
+                                    onTap: _showForgotPasswordDialog,
+                                    child: const Text(
+                                      'Mot de passe oublié ?',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryBlue,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
 
-                            const SizedBox(height: 35),
+                            const SizedBox(height: 20),
+
+                            // Remember Me Checkbox Row
+                            Row(
+                              children: [
+                                SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: Checkbox(
+                                    value: _rememberMe,
+                                    activeColor: primaryBlue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        _rememberMe = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Se souvenir de moi',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 25),
 
                             // Login Button
-                            _isLoading
-                                ? const CircularProgressIndicator(color: primaryBlue)
-                                : SizedBox(
-                                    width: double.infinity,
-                                    height: 58,
-                                    child: ElevatedButton(
-                                      onPressed: _login,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryBlue,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(18),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 58,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryBlue,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: primaryBlue
+                                      .withOpacity(0.7),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  elevation: 8,
+                                  shadowColor: primaryBlue.withOpacity(0.4),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
                                         ),
-                                        elevation: 8,
-                                        shadowColor: primaryBlue.withOpacity(0.4),
-                                      ),
-                                      child: Text(
-                                        'login.login_button'.tr(),
-                                        style: const TextStyle(
+                                      )
+                                    : const Text(
+                                        'Se connecter',
+                                        style: TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),
-                                    ),
-                                  ),
+                              ),
+                            ),
 
                             const SizedBox(height: 50),
 
                             // Social Section Inside Card
-                            Text(
-                              'login.or_connect'.tr(),
-                              style: const TextStyle(
+                            const Text(
+                              'Ou connectez-vous avec',
+                              style: TextStyle(
                                 color: Colors.black38,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -267,7 +435,8 @@ class _LoginPageState extends State<LoginPage> {
                                     defaultColor: primaryBlue,
                                     hoverColor: const Color(0xFFEA4335),
                                     size: 22,
-                                    onTap: () => _launchURL('mailto:contact@osbt.ma'),
+                                    onTap: () =>
+                                        _launchURL('mailto:contact@osbt.ma'),
                                   ),
                                   const SizedBox(width: 12),
                                   _InteractiveSocialIcon(
@@ -314,47 +483,66 @@ class _LoginPageState extends State<LoginPage> {
     required bool obscureText,
     bool isPassword = false,
     VoidCallback? onToggleVisibility,
+    required String? Function(String?) validator,
+    TextInputType keyboardType = TextInputType.text,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        style: const TextStyle(fontSize: 15, color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: Colors.black.withOpacity(0.3),
-            fontSize: 15,
-          ),
-          prefixIcon: Icon(icon, color: Colors.black45, size: 20),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    obscureText
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: Colors.black38,
-                    size: 20,
-                  ),
-                  onPressed: onToggleVisibility,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
+      style: const TextStyle(fontSize: 15, color: Colors.black87),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.3),
+          fontSize: 15,
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) return 'Requis';
-          return null;
-        },
+        prefixIcon: Icon(icon, color: Colors.black45, size: 20),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: Colors.black38,
+                  size: 20,
+                ),
+                onPressed: onToggleVisibility,
+              )
+            : null,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.05)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1A1F3D), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
+        errorStyle: const TextStyle(
+          color: Colors.redAccent,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      validator: validator,
     );
   }
-
 
   @override
   void dispose() {
@@ -429,7 +617,9 @@ class _InteractiveSocialIconState extends State<_InteractiveSocialIcon> {
                 ),
                 child: Icon(
                   widget.icon,
-                  color: _isHovered ? widget.hoverColor : widget.defaultColor.withOpacity(0.7),
+                  color: _isHovered
+                      ? widget.hoverColor
+                      : widget.defaultColor.withOpacity(0.7),
                   size: widget.size,
                 ),
               ),

@@ -79,4 +79,28 @@ class NotificationProvider with ChangeNotifier {
     _notifications.removeWhere((n) => n['id'] == notifId);
     notifyListeners();
   }
+
+  Future<bool> deleteNotification(int notifId) async {
+    // Optimistic UI update: remove locally first
+    final backupNotif = _notifications.firstWhere((n) => n['id'] == notifId, orElse: () => null);
+    final backupIndex = _notifications.indexWhere((n) => n['id'] == notifId);
+    
+    if (backupIndex != -1) {
+      _notifications.removeAt(backupIndex);
+      notifyListeners();
+
+      final result = await _authService.deleteNotification(notifId);
+      
+      if (result['success'] != true) {
+        // Revert on failure
+        if (backupNotif != null) {
+          _notifications.insert(backupIndex, backupNotif);
+          notifyListeners();
+        }
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -14,80 +13,139 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/welcome_page.dart';
 import 'screens/main_screen.dart';
+import 'services/fcm_service.dart' as import_fcm_service;
+import 'theme/app_theme.dart';
+
+// Plugin de notifications locales (global pour être accessible partout)
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+// Canal de notification Android (global)
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel',
+  'Notifications Importantes',
+  description: 'Ce canal est utilisé pour les notifications critiques.',
+  importance: Importance.max,
+  playSound: true,
+  enableVibration: true,
+);
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialiser Firebase pour l'isolat d'arrière-plan
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Extraire les infos soit de 'notification', soit de 'data'
+  String? title = message.notification?.title ?? message.data['title'];
+  String? body = message.notification?.body ?? message.data['body'];
+
+  if (title != null || body != null) {
+    debugPrint("FCM [Arrière-plan]: Affichage d'une notification: $title");
+    await flutterLocalNotificationsPlugin.show(
+      id: message.messageId.hashCode,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
+          icon: '@mipmap/ic_launcher',
+          priority: Priority.high,
+          importance: Importance.max,
+        ),
+      ),
+    );
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await EasyLocalization.ensureInitialized();
 
-  // Initialisation de Firebase
+  // 1. Initialisation de Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // Demander la permission pour les notifications (très important pour le background/foreground FCM)
+    // 2. Demander la permission pour les notifications (iOS/Android 13+)
     FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
-
-    // Configuration des notifications en premier plan (Foreground)
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'Canal utilisé pour les notifications importantes.',
-      importance: Importance.max,
+    await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
     );
 
-    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
+    // 3. Configuration de flutter_local_notifications
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: DarwinInitializationSettings(),
+    );
 
+    await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse details) {
+        // Gérer le clic sur la notification
+      },
+    );
+
+    // 4. Créer le canal Android
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
+    // 5. Configurer FCM
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-      if (notification != null && android != null) {
+    // Gérer les notifications en premier plan (Foreground)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      String? title = message.notification?.title ?? message.data['title'];
+      String? body = message.notification?.body ?? message.data['body'];
+
+      if (title != null || body != null) {
+        debugPrint("FCM [Premier plan]: Affichage d'une notification: $title");
         flutterLocalNotificationsPlugin.show(
-          id: notification.hashCode,
-          title: notification.title,
-          body: notification.body,
-          notificationDetails: const NotificationDetails(
+          id: message.messageId.hashCode,
+          title: title,
+          body: body,
+          notificationDetails: NotificationDetails(
             android: AndroidNotificationDetails(
-              'high_importance_channel',
-              'High Importance Notifications',
-              channelDescription:
-                  'Canal utilisé pour les notifications importantes.',
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
               icon: '@mipmap/ic_launcher',
+              importance: Importance.max,
+              priority: Priority.high,
             ),
           ),
         );
       }
     });
+
+    // 6. Initialiser le service FCM pour synchroniser le token
+    await import_fcm_service.FcmService.initialize();
+    
   } catch (e) {
-    debugPrint('Erreur d\'initialisation Firebase: $e');
+    debugPrint('Erreur d\'initialisation globale: $e');
   }
 
   final prefs = await SharedPreferences.getInstance();
   final int? idStudent = prefs.getInt('idStudent');
 
   runApp(
-    EasyLocalization(
-      supportedLocales: const [Locale('fr')],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('fr'),
-      child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => SettingsProvider()),
-          ChangeNotifierProvider(create: (_) => PaymentProvider()),
-          ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ],
-        child: MyApp(initialRoute: idStudent != null ? '/main' : '/login'),
-      ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
+      child: MyApp(initialRoute: idStudent != null ? '/main' : '/login'),
     ),
   );
 }
@@ -103,16 +161,16 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'OSBT Notify',
-          localizationsDelegates: [
-            ...context.localizationDelegates,
+          locale: const Locale('fr'),
+          supportedLocales: const [Locale('fr')],
+          localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: context.supportedLocales,
-          locale: context.locale,
-          theme: themeProvider.lightTheme,
-          themeMode: ThemeMode.light,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
           initialRoute: initialRoute,
           routes: {
             '/welcome': (context) => const WelcomePage(),

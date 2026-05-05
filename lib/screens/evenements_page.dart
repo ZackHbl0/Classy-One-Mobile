@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import '../services/auth_service.dart';
 import '../widgets/screen_header.dart';
 import '../models/event_model.dart';
@@ -90,7 +89,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
                       padding: EdgeInsets.zero,
                       alignment: Alignment.centerLeft,
                     ),
-                  ScreenHeader(title: 'events.title'.tr()),
+                  const ScreenHeader(title: 'Événements'),
                   const SizedBox(height: 16),
 
                   // Filter Chips
@@ -160,8 +159,9 @@ class _EvenementsPageState extends State<EvenementsPage> {
                       physics: const BouncingScrollPhysics(),
                       itemCount: _filteredEvents.length + 1,
                       itemBuilder: (context, index) {
-                        if (index == _filteredEvents.length)
+                        if (index == _filteredEvents.length) {
                           return const SizedBox(height: 30);
+                        }
                         return _buildSleekEventCard(_filteredEvents[index]);
                       },
                     ),
@@ -222,8 +222,11 @@ class _EvenementsPageState extends State<EvenementsPage> {
         ? DateFormat('dd').format(event.dateEvent!)
         : '--';
     final monthStr = event.dateEvent != null
-        ? DateFormat('MMM').format(event.dateEvent!).toUpperCase()
+        ? DateFormat('MMM', 'fr_FR').format(event.dateEvent!).toUpperCase()
         : 'À VENIR';
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () async {
@@ -240,12 +243,17 @@ class _EvenementsPageState extends State<EvenementsPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -260,7 +268,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: primaryBlue.withOpacity(0.05),
+                  color: primaryBlue.withOpacity(isDark ? 0.2 : 0.05),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child:
@@ -269,25 +277,23 @@ class _EvenementsPageState extends State<EvenementsPage> {
                         borderRadius: BorderRadius.circular(10),
                         child: Builder(
                           builder: (context) {
-                            debugPrint('Trying to load image: ${event.imageUrl}');
                             return Image.network(
                               event.imageUrl!,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                debugPrint('Image load error for ${event.imageUrl}: $error');
-                                return const Icon(
+                                return Icon(
                                   Icons.celebration_outlined,
-                                  color: primaryBlue,
+                                  color: isDark ? Colors.white70 : primaryBlue,
                                   size: 20,
                                 );
                               },
                             );
-                          }
+                          },
                         ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.celebration_outlined,
-                        color: primaryBlue,
+                        color: isDark ? Colors.white70 : primaryBlue,
                         size: 20,
                       ),
               ),
@@ -303,10 +309,10 @@ class _EvenementsPageState extends State<EvenementsPage> {
                       event.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -349,10 +355,10 @@ class _EvenementsPageState extends State<EvenementsPage> {
                 ),
               ),
 
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
                 size: 14,
-                color: Color(0xFFCBD5E1),
+                color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
               ),
             ],
           ),

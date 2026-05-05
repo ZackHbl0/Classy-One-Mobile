@@ -174,10 +174,13 @@ class _AttendanceSummaryPageState extends State<AttendanceSummaryPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+            BoxShadow(
+              color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05),
+              blurRadius: 10
+            ),
           ],
         ),
         child: Row(
@@ -224,10 +227,15 @@ class _AttendanceSummaryPageState extends State<AttendanceSummaryPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.2), width: 1),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.1 : 0.05), 
+            blurRadius: 10
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,8 +257,8 @@ class _AttendanceSummaryPageState extends State<AttendanceSummaryPage> {
             fit: BoxFit.scaleDown,
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.black54,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -384,7 +392,11 @@ class _AttendanceSummaryPageState extends State<AttendanceSummaryPage> {
             const SizedBox(width: 15),
             Text(
               day['status'] ?? '--',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 16, 
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
           ],
         ),

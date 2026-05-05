@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 import '../widgets/screen_header.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
 
 class PaiementPage extends StatefulWidget {
-  const PaiementPage({super.key});
+  final bool? showBackButton;
+  const PaiementPage({super.key, this.showBackButton = false});
 
   @override
   State<PaiementPage> createState() => _PaiementPageState();
@@ -72,36 +72,10 @@ class _PaiementPageState extends State<PaiementPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (Navigator.canPop(context)) ...[
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white10
-                        : Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 18,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-              ),
-            ],
-            ScreenHeader(title: 'paiement.title'.tr()),
+            ScreenHeader(
+              title: 'Paiements',
+              showBackButton: widget.showBackButton ?? false,
+            ),
             const SizedBox(height: 24),
             // Summary Card
             Container(
@@ -222,10 +196,7 @@ class _PaiementPageState extends State<PaiementPage> {
 
             const SizedBox(height: 40),
 
-            _buildSectionHeader(
-              'paiement.history'.tr(),
-              Icons.history_rounded,
-            ),
+            _buildSectionHeader('Historique', Icons.history_rounded),
 
             const SizedBox(height: 20),
 
@@ -245,10 +216,10 @@ class _PaiementPageState extends State<PaiementPage> {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
+            color: Theme.of(context).textTheme.titleLarge?.color,
           ),
         ),
       ],
@@ -262,12 +233,18 @@ class _PaiementPageState extends State<PaiementPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.05)
+              : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -283,10 +260,10 @@ class _PaiementPageState extends State<PaiementPage> {
               children: [
                 Text(
                   tranche['title'] ?? '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF1E293B),
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -316,10 +293,10 @@ class _PaiementPageState extends State<PaiementPage> {
             children: [
               Text(
                 tranche['amount'] ?? '',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  color: Color(0xFF1E293B),
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
               const SizedBox(height: 10),

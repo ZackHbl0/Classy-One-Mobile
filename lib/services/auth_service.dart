@@ -20,9 +20,9 @@ class AuthService {
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
-     
+
   Future<Map<String, dynamic>> login(
-    String matricule, 
+    String matricule,
     String password, {
     String fcmToken = '',
   }) async {
@@ -358,6 +358,18 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> deleteNotification(int idNotification) async {
+    final url = Uri.parse('$baseUrl/notifications/$idNotification');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(url, headers: headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
   Future<Map<String, dynamic>> registerForEvent(
     int idStudent,
     int idNotification,
@@ -437,6 +449,44 @@ class AuthService {
           'idStudent': idStudent,
           'month': month ?? DateTime.now().month,
           'year': year ?? DateTime.now().year,
+        }),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateFcmToken(String fcmToken) async {
+    final url = Uri.parse('$baseUrl/profile/update-fcm-token');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'fcmToken': fcmToken}),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotificationPreferences({
+    required bool eventNotifications,
+    required bool paymentNotifications,
+  }) async {
+    final url = Uri.parse('$baseUrl/profile/update-preferences');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'eventNotifications': eventNotifications,
+          'paymentNotifications': paymentNotifications,
         }),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
