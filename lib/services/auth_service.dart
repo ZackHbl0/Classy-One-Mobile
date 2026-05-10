@@ -7,7 +7,7 @@ import '../models/student.dart';
 
 class AuthService {
   // Update to the new Laravel API path
-  static const String baseUrl = "http://192.168.100.55/osbt-api/public/api";
+  static const String baseUrl = "http://192.168.1.8/Classy-One/public/api";
 
   //static const String baseUrl = "http://classy-one.test/api";
 
@@ -424,31 +424,6 @@ class AuthService {
           'documentType': type,
           'reason': reason,
           'urgency': urgency.toLowerCase(),
-        }),
-      );
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      return {'success': false, 'message': 'Error: ${response.statusCode}'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  Future<Map<String, dynamic>> getAttendance(
-    int idStudent, {
-    int? month,
-    int? year,
-  }) async {
-    // Calls new Laravel AttendanceController mapped exactly like the legacy get_attendance.php structure.
-    final url = Uri.parse('$baseUrl/attendance');
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode({
-          'idStudent': idStudent,
-          'month': month ?? DateTime.now().month,
-          'year': year ?? DateTime.now().year,
         }),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);

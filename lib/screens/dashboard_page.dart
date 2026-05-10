@@ -7,7 +7,7 @@ import 'evenements_page.dart';
 import 'notifications_page.dart';
 import 'paiement_page.dart';
 import 'planning_page.dart';
-import 'attendance_page.dart';
+
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
 import '../providers/notification_provider.dart';
@@ -33,13 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
   String _errorMessage = '';
   int _currentCarouselIndex = 0;
 
-  Map<String, dynamic> _stats = {
-    'absences': 0,
-    'retards': 0,
-    'conges': 0,
-    'totalJours': 0,
-    'dernier_paiement': 'Aucun paiement',
-  };
+  Map<String, dynamic> _stats = {'dernier_paiement': 'Aucun paiement'};
   List<dynamic> _urgentNotifications = [];
   List<dynamic> _recentActivityFeed = [];
   List<Course> _todaySessions = [];
@@ -671,19 +665,7 @@ class _DashboardPageState extends State<DashboardPage> {
             MaterialPageRoute(builder: (context) => const NotificationsPage()),
           ),
         ),
-        _buildCarouselCard(
-          title: 'ASSIDUITÉ',
-          subtitle: 'Absences: ${_stats['absences']}',
-          value: 'Retards: ${_stats['retards']} | Congés: ${_stats['conges']}',
-          icon: Icons.person_off_outlined,
-          colors: [const Color(0xFF34D399), const Color(0xFF10B981)],
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AttendanceSummaryPage(),
-            ),
-          ),
-        ),
+
         _buildCarouselCard(
           title: 'FINANCES',
           subtitle: 'Dernier statut: ${_stats['dernier_paiement']}',
@@ -705,7 +687,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        4,
+        3,
         (index) => Container(
           width: _currentCarouselIndex == index ? 20.0 : 6.0,
           height: 6.0,
@@ -817,10 +799,7 @@ class _DashboardPageState extends State<DashboardPage> {
             icon = Icons.account_balance_wallet_outlined;
             color = const Color(0xFF10B981);
             break;
-          case 'attendance':
-            icon = Icons.person_off_outlined;
-            color = const Color(0xFFF59E0B);
-            break;
+
           case 'event':
             icon = Icons.event_outlined;
             color = const Color(0xFF3B82F6);
