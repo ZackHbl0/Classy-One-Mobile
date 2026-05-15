@@ -1,3 +1,5 @@
+import '../services/auth_service.dart';
+
 class EventModel {
   final int id;
   final String title;
@@ -23,6 +25,24 @@ class EventModel {
     required this.price,
   });
 
+  /// Derives the Laravel public/storage base URL from the API baseUrl.
+  /// e.g. "http://192.168.100.55/Classy-One/public/api"
+  ///   -> "http://192.168.100.55/Classy-One/public/storage/"
+  ///
+  /// This means image URLs automatically follow whatever IP is set in
+  /// AuthService.baseUrl — no hardcoded IPs anywhere.
+  static String? _buildImageUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+
+    // If the backend already returns a full URL (future-proofing), use it as-is.
+    if (path.startsWith('http')) return path;
+
+    // Strip trailing "/api" from baseUrl and append "/storage/<path>"
+    final storageBase =
+        AuthService.baseUrl.replaceAll(RegExp(r'/api$'), '/storage/');
+    return '$storageBase$path';
+  }
+
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
       id: json['id'] ?? 0,
@@ -32,7 +52,7 @@ class EventModel {
           ? DateTime.tryParse(json['date_event'])
           : null,
       location: json['location'] ?? '',
-      imageUrl: json['image_url'],
+      imageUrl: _buildImageUrl(json['image_url']),
       category: json['category'] ?? 'Académique',
       isConfirmed: json['isConfirmed'] ?? false,
       participants: json['participants'] ?? 0,
@@ -40,3 +60,4 @@ class EventModel {
     );
   }
 }
+

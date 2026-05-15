@@ -7,7 +7,7 @@ import '../models/student.dart';
 
 class AuthService {
   // Update to the new Laravel API path
-  static const String baseUrl = "http://192.168.1.8/Classy-One/public/api";
+  static const String baseUrl = "http://192.168.100.55/Classy-One/public/api";
 
   //static const String baseUrl = "http://classy-one.test/api";
 
