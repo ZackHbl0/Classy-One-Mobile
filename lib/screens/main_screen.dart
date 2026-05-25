@@ -5,6 +5,7 @@ import 'evenements_page.dart';
 import 'paiement_page.dart';
 import 'documents_page.dart';
 import '../widgets/modern_nav_bar.dart';
+import 'courses_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,6 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = [
     const DashboardPage(),
     const PlanningPage(),
+    const CoursesScreen(),
     const EvenementsPage(),
     const PaiementPage(showBackButton: false),
     const DocumentsPage(),
@@ -35,6 +37,11 @@ class _MainScreenState extends State<MainScreen> {
       icon: Icons.calendar_today_outlined,
       activeIcon: Icons.calendar_today_rounded,
       label: 'Agenda',
+    ),
+    NavBarItem(
+      icon: Icons.school_outlined,
+      activeIcon: Icons.school_rounded,
+      label: 'Cours',
     ),
     NavBarItem(
       icon: Icons.event_outlined,
