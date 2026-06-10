@@ -1,399 +1,183 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 
-/// A screen that displays PDF documents with multiple viewing options.
-/// Supports both inline preview and external viewer launch.
+/// Full-screen in-app PDF viewer.
+/// Downloads and displays PDF files without leaving the app.
 class PdfViewerScreen extends StatefulWidget {
   final String pdfUrl;
   final String? pdfTitle;
 
-  const PdfViewerScreen({Key? key, required this.pdfUrl, this.pdfTitle})
-    : super(key: key);
+  const PdfViewerScreen({super.key, required this.pdfUrl, this.pdfTitle});
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
 
-class _PdfViewerScreenState extends State<PdfViewerScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  bool _isLoading = false;
+class _PdfViewerScreenState extends State<PdfViewerScreen> {
+  String? localPath;
+  bool isLoading = true;
+  String? errorMessage;
+  int currentPage = 0;
+  int totalPages = 0;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _animController.forward();
+    _downloadAndLoadPdf();
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
+  Future<void> _downloadAndLoadPdf() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
 
-  /// Open PDF in external viewer (browser or PDF app)
-  Future<void> _openPdfExternally() async {
-    setState(() => _isLoading = true);
     try {
-      final uri = Uri.parse(widget.pdfUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Download PDF to local storage
+      final response = await http.get(Uri.parse(widget.pdfUrl));
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/temp_course.pdf');
+        await file.writeAsBytes(response.bodyBytes);
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ouverture du document PDF...'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          setState(() {
+            localPath = file.path;
+            isLoading = false;
+          });
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible d\'ouvrir le document PDF.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+          setState(() {
+            errorMessage =
+                'Impossible de télécharger le PDF (Code: ${response.statusCode})';
+            isLoading = false;
+          });
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        setState(() {
+          errorMessage = 'Erreur de téléchargement: $e';
+          isLoading = false;
+        });
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF6366F1);
-    const accentColor = Color(0xFF4F46E5);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           widget.pdfTitle ?? 'Document PDF',
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: Colors.white,
             fontSize: 18,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.blue,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [primaryColor, accentColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Information Card
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1E293B).withOpacity(0.8)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: isDark
-                      ? Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1,
-                        )
-                      : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [primaryColor, accentColor],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.picture_as_pdf_rounded,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Document PDF',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.pdfTitle ?? 'Contenu PDF',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark
-                            ? Colors.white60
-                            : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+        actions: [
+          if (totalPages > 0)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Text(
+                  '${currentPage + 1}/$totalPages',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              Column(
+            ),
+        ],
+      ),
+      body: isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Primary: Open Externally
-                  SizedBox(
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _openPdfExternally,
-                      icon: const Icon(Icons.open_in_new_rounded),
-                      label: const Text(
-                        'Ouvrir le document',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: primaryColor.withOpacity(0.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Secondary: View Information
-                  SizedBox(
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) =>
-                              _buildDocumentInfoDialog(context, isDark),
-                        );
-                      },
-                      icon: const Icon(Icons.info_outline_rounded),
-                      label: const Text(
-                        'Informations du document',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: primaryColor,
-                        side: BorderSide(color: primaryColor, width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+                  const CircularProgressIndicator(color: Colors.blue),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Téléchargement du PDF...',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-
-              // Info Text
-              Container(
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: primaryColor.withOpacity(0.2)),
-                ),
-                padding: const EdgeInsets.all(16),
+            )
+          : errorMessage != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: primaryColor,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Conseils de consultation',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.redAccent,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
-                      '• Assurez-vous d\'avoir une bonne connexion internet\n'
-                      '• Le document s\'ouvrira dans votre lecteur PDF par défaut\n'
-                      '• Vous pouvez télécharger ou imprimer le document',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? Colors.white70
-                            : const Color(0xFF475569),
-                        height: 1.6,
+                      errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _downloadAndLoadPdf,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Réessayer'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            )
+          : localPath != null
+          ? PDFView(
+              filePath: localPath!,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: true,
+              pageFling: true,
+              pageSnap: true,
+              onRender: (pages) {
+                setState(() {
+                  totalPages = pages ?? 0;
+                });
+              },
+              onPageChanged: (page, total) {
+                setState(() {
+                  currentPage = page ?? 0;
+                  totalPages = total ?? 0;
+                });
+              },
+              onError: (error) {
+                setState(() {
+                  errorMessage = 'Erreur d\'affichage du PDF';
+                });
+              },
+            )
+          : const Center(child: Text('Aucun fichier à afficher')),
     );
-  }
-
-  /// Build document information dialog
-  Widget _buildDocumentInfoDialog(BuildContext context, bool isDark) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Informations',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  ),
-                ),
-                InkWell(
-                  onTap: () => Navigator.pop(context),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Icon(
-                    Icons.close_rounded,
-                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildInfoRow('Type', 'Document PDF', isDark),
-            const SizedBox(height: 16),
-            _buildInfoRow('Titre', widget.pdfTitle ?? 'Sans titre', isDark),
-            const SizedBox(height: 16),
-            _buildInfoRow('URL', _truncateUrl(widget.pdfUrl), isDark),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text('Fermer'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Build information row
-  Widget _buildInfoRow(String label, String value, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-
-  /// Truncate long URLs
-  String _truncateUrl(String url) {
-    if (url.length > 50) {
-      return '${url.substring(0, 50)}...';
-    }
-    return url;
   }
 }

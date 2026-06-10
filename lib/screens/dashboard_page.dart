@@ -13,6 +13,8 @@ import '../providers/payment_provider.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/global_app_header.dart';
 import '../models/course.dart';
+import '../models/grade.dart';
+import '../widgets/grade_summary_card.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -41,6 +43,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<String, dynamic>? _latestNotification;
   int _currentSessionPageIndex = 0;
 
+  // Grades data
+  GradeSummary? _gradeSummary;
+  bool _isLoadingGrades = false;
+  String? _gradesErrorMessage;
+
   final AuthService _authService = AuthService();
 
   @override
@@ -61,6 +68,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (_idStudent != 0) {
       await _fetchDashboardData();
+      await _fetchGrades(); // Load grades for dashboard card
       if (mounted) {
         context.read<PaymentProvider>().fetchPaymentData(_idStudent);
         context.read<NotificationProvider>().fetchNotifications(_idStudent);
@@ -68,6 +76,44 @@ class _DashboardPageState extends State<DashboardPage> {
     } else {
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
+  }
+
+  Future<void> _fetchGrades() async {
+    setState(() {
+      _isLoadingGrades = true;
+      _gradesErrorMessage = null;
+    });
+
+    try {
+      final result = await _authService.getGrades(_idStudent);
+
+      if (mounted) {
+        setState(() {
+          _isLoadingGrades = false;
+
+          if (result['success'] == true) {
+            // Laravel API returns statistics at top level: result['statistics']
+            if (result['statistics'] != null &&
+                result['statistics'] is Map<String, dynamic>) {
+              _gradeSummary = GradeSummary.fromJson(
+                result['statistics'] as Map<String, dynamic>,
+              );
+            }
+            _gradesErrorMessage = null;
+          } else {
+            _gradesErrorMessage =
+                result['message']?.toString() ?? 'Erreur de chargement';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingGrades = false;
+          _gradesErrorMessage = 'Erreur: $e';
+        });
       }
     }
   }
@@ -564,9 +610,24 @@ class _DashboardPageState extends State<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-                    _buildStatsCarousel(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: _buildStatsCarousel(),
+                    ),
                     const SizedBox(height: 12),
                     _buildStatsDots(),
+                    const SizedBox(height: 28),
+                    _buildSectionHeader('MES NOTES', null),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: GradeSummaryCard(
+                        summary: _gradeSummary,
+                        isLoading: _isLoadingGrades,
+                        errorMessage: _gradesErrorMessage,
+                        onRetry: _fetchGrades,
+                      ),
+                    ),
                     const SizedBox(height: 28),
                     _buildSectionHeader(
                       'COURS DU JOUR',

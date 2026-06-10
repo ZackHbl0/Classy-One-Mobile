@@ -198,10 +198,10 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 15),
 
-                // Logo OSBT Outside the card
+                // Logo ClassyOne Outside the card
                 Center(
                   child: Image.asset(
-                    'assets/images/osbt_logo.png',
+                    'assets/images/Classy_One.png',
                     height: 85,
                     fit: BoxFit.contain,
                   ),

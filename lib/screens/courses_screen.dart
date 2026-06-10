@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'video_player_screen.dart';
 import '../widgets/screen_header.dart';
 import '../utils/content_router.dart';
+import '../config/constants.dart';
 
 class CoursesScreen extends StatefulWidget {
-  const CoursesScreen({Key? key}) : super(key: key);
+  const CoursesScreen({super.key});
 
   @override
   State<CoursesScreen> createState() => _CoursesScreenState();
@@ -47,11 +47,9 @@ class _CoursesScreenState extends State<CoursesScreen>
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
 
-      // Call our new POST endpoint as configured in the backend
+      // Call our new POST endpoint using centralized baseUrl
       final response = await http.post(
-        Uri.parse(
-          'http://192.168.56.1/Classy-One/public/api/courses',
-        ), // Matches AuthService baseUrl
+        Uri.parse('${AppConstants.baseUrl}/courses'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

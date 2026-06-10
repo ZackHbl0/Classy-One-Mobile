@@ -59,7 +59,7 @@ class _CustomModernNavBarState extends State<CustomModernNavBar>
     0xFF64748B,
   ); // Medium Slate Grey (High contrast)
   static const _inactiveD = Color(0xFF94A3B8); // Slate for Dark Mode
-  static const _barHeight = 62.0;
+  static const _barHeight = 68.0; // Increased from 62 to prevent overflow
 
   @override
   void initState() {
@@ -218,7 +218,7 @@ class _NavItemState extends State<_NavItem>
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 60,
+        height: 66, // Increased from 60 to prevent overflow
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -243,14 +243,13 @@ class _NavItemState extends State<_NavItem>
                     color: widget.isActive
                         ? widget.activeColor
                         : widget.inactiveColor,
-                    size: 24,
+                    size: 23, // Reduced from 24 to save space
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 5),
-
+            const SizedBox(height: 4), // Reduced from 5 to save space
             // ── Glow dot + sliding label (active only) ─────────────────────
             AnimatedBuilder(
               animation: _labelCtrl,
@@ -264,8 +263,8 @@ class _NavItemState extends State<_NavItem>
                       children: [
                         // Glow dot
                         Container(
-                          width: 22,
-                          height: 3.5,
+                          width: 20, // Reduced from 22
+                          height: 3,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             color: widget.activeColor,
@@ -287,16 +286,19 @@ class _NavItemState extends State<_NavItem>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        // Label — only for active
-                        Text(
-                          widget.item.label,
-                          style: GoogleFonts.inter(
-                            fontSize: 10.5,
-                            fontWeight:
-                                FontWeight.w800, // Extra Bold for Active
-                            color: widget.activeColor,
-                            letterSpacing: 0.1,
+                        const SizedBox(height: 2), // Reduced from 3
+                        // Label — only for active, wrapped in FittedBox
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.item.label,
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5, // Reduced from 10.5
+                              fontWeight:
+                                  FontWeight.w800, // Extra Bold for Active
+                              color: widget.activeColor,
+                              letterSpacing: 0.1,
+                            ),
                           ),
                         ),
                       ],

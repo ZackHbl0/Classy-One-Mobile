@@ -4,12 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import '../models/student.dart';
+import '../config/constants.dart';
 
 class AuthService {
-  // Update to the new Laravel API path
-  static const String baseUrl = "http://192.168.100.55/Classy-One/public/api";
-
-  //static const String baseUrl = "http://classy-one.test/api";
+  // Use centralized BASE_URL from constants
+  static String get baseUrl => AppConstants.baseUrl;
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -466,6 +465,30 @@ class AuthService {
       );
       if (response.statusCode == 200) return jsonDecode(response.body);
       return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getGrades(int idStudent) async {
+    final url = Uri.parse('$baseUrl/grades');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({}),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      try {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Error: ${response.statusCode}',
+        };
+      } catch (e) {
+        return {'success': false, 'message': 'Error: ${response.statusCode}'};
+      }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }

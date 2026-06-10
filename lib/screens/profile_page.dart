@@ -6,6 +6,7 @@ import '../widgets/premium_switch.dart';
 import 'login_page.dart';
 import 'settings_page.dart';
 import 'edit_profile_page.dart';
+import 'grades_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -293,6 +294,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 32),
 
                   // Individual Settings Rows
+                  _buildProfileTile(
+                    icon: Icons.grade_rounded,
+                    title: 'Mes Notes / Bulletin',
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GradesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
                   _buildProfileTile(
                     icon: Icons.settings_outlined,
                     title: 'Paramètres & Préférences',

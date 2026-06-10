@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/welcome_page.dart';
 import 'screens/main_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/fcm_service.dart' as import_fcm_service;
 import 'theme/app_theme.dart';
 
@@ -34,7 +35,7 @@ const AndroidNotificationChannel channel = AndroidNotificationChannel(
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Initialiser Firebase pour l'isolat d'arrière-plan
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // Extraire les infos soit de 'notification', soit de 'data'
   String? title = message.notification?.title ?? message.data['title'];
   String? body = message.notification?.body ?? message.data['body'];
@@ -80,11 +81,12 @@ void main() async {
     // 3. Configuration de flutter_local_notifications
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: DarwinInitializationSettings(),
-    );
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: DarwinInitializationSettings(),
+        );
 
     await flutterLocalNotificationsPlugin.initialize(
       settings: initializationSettings,
@@ -96,7 +98,8 @@ void main() async {
     // 4. Créer le canal Android
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     // 5. Configurer FCM
@@ -129,13 +132,9 @@ void main() async {
 
     // 6. Initialiser le service FCM pour synchroniser le token
     await import_fcm_service.FcmService.initialize();
-    
   } catch (e) {
     debugPrint('Erreur d\'initialisation globale: $e');
   }
-
-  final prefs = await SharedPreferences.getInstance();
-  final int? idStudent = prefs.getInt('idStudent');
 
   runApp(
     MultiProvider(
@@ -145,22 +144,20 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
-      child: MyApp(initialRoute: idStudent != null ? '/main' : '/login'),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final String initialRoute;
-
-  const MyApp({super.key, required this.initialRoute});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          title: 'OSBT Notify',
+          title: 'Classy One',
           locale: const Locale('fr'),
           supportedLocales: const [Locale('fr')],
           localizationsDelegates: const [
@@ -170,9 +167,12 @@ class MyApp extends StatelessWidget {
           ],
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          initialRoute: initialRoute,
+          themeMode: themeProvider.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          initialRoute: '/splash',
           routes: {
+            '/splash': (context) => const SplashScreen(),
             '/welcome': (context) => const WelcomePage(),
             '/login': (context) => const LoginPage(),
             '/main': (context) => const MainScreen(),

@@ -29,7 +29,7 @@ class CurvedBackground extends StatelessWidget {
                     const SizedBox(height: 20),
                     // Header Logo
                     Image.asset(
-                      'assets/images/osbt_logo.png',
+                      'assets/images/Classy_One.png',
                       height: 100,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => const Icon(
