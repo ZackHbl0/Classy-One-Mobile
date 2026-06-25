@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
-/// Splash Screen élégant avec dégradé violet premium
+/// Splash Screen élégant avec thème vert ClassyOne
 /// S'affiche pendant 3 secondes au démarrage de l'application
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -85,9 +85,9 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF8B5CF6), // Violet premium
-              Color(0xFF6366F1), // Indigo
-              Color(0xFF4F46E5), // Bleu profond
+              Color(0xFF0D6B3F), // Vert foncé
+              Color(0xFF1B8C5A), // Vert moyen
+              Color(0xFF27AE60), // Vert clair
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -103,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.06),
                 ),
               ),
             ),
@@ -115,7 +115,19 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 400,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.15,
+              left: -60,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.04),
                 ),
               ),
             ),
@@ -132,26 +144,28 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Logo / Icône de l'application
+                          // Logo ClassyOne
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 140,
+                            height: 140,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
+                              color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
+                                  color: Colors.black.withValues(alpha: 0.15),
                                   blurRadius: 30,
-                                  offset: const Offset(0, 15),
+                                  offset: const Offset(0, 12),
                                 ),
                               ],
                             ),
-                            child: Center(
-                              child: Icon(
-                                Icons.school_rounded,
-                                size: 60,
-                                color: Colors.white.withValues(alpha: 0.95),
+                            child: ClipOval(
+                              child: Padding(
+                                padding: const EdgeInsets.all(22),
+                                child: Image.asset(
+                                  'assets/images/classyone_icon.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
                           ),
@@ -160,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                           // Nom de l'application
                           const Text(
-                            'Classy One',
+                            'ClassyOne',
                             style: TextStyle(
                               fontSize: 42,
                               fontWeight: FontWeight.bold,

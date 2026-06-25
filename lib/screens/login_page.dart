@@ -201,8 +201,8 @@ class _LoginPageState extends State<LoginPage> {
                 // Logo ClassyOne Outside the card
                 Center(
                   child: Image.asset(
-                    'assets/images/Classy_One.png',
-                    height: 85,
+                    'assets/images/classyone_icon.png',
+                    height: 110,
                     fit: BoxFit.contain,
                   ),
                 ),

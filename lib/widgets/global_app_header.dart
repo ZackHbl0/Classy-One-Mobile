@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
 import '../screens/notifications_page.dart';
 import '../screens/profile_page.dart';
+import '../screens/professors_list_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GlobalAppHeader
@@ -103,6 +104,21 @@ class GlobalAppHeader extends StatelessWidget {
           // ── Action icons ──────────────────────────────────────────────────
           if ((showNotification ?? true) == true) ...[
             const SizedBox(width: 4),
+            _ActionButton(
+              child: Icon(
+                Icons.chat_bubble_outline,
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                size: 22,
+              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfessorsListScreen()),
+                );
+              },
+            ),
+            const SizedBox(width: 2),
             _ActionButton(
               child: _NotifIcon(isDark: isDark),
               onTap: onNotificationTap ?? () {

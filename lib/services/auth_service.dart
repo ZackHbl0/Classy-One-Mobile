@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
 import '../models/student.dart';
 import '../config/constants.dart';
 
@@ -491,6 +492,88 @@ class AuthService {
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // ─── Chat System Methods ───────────────────────────────────────
+
+  Future<List<dynamic>> getProfessors() async {
+    final url = Uri.parse('$baseUrl/chat/professors');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> getChatHistory(int userId, {String? targetType}) async {
+    final typeParam = targetType != null ? '?target_type=$targetType' : '';
+    final url = Uri.parse('$baseUrl/chat/history/$userId$typeParam');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> sendMessage(int receiverId, String message, {
+    String? receiverType,
+    List<int>? attachmentBytes,
+    String? attachmentName,
+    List<int>? audioBytes,
+    String? audioName,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) return {'error': 'Non authentifié'};
+
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/chat/send'));
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+
+      request.fields['receiver_id'] = receiverId.toString();
+      if (receiverType != null) {
+        request.fields['receiver_type'] = receiverType;
+      }
+      if (message.isNotEmpty) {
+        request.fields['message'] = message;
+      }
+
+      if (attachmentBytes != null && attachmentName != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'attachment', 
+          attachmentBytes,
+          filename: attachmentName,
+        ));
+      }
+
+      if (audioBytes != null && audioName != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'audio', 
+          audioBytes,
+          filename: audioName,
+          contentType: MediaType('audio', 'm4a'),
+        ));
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        return json.decode(response.body);
+      }
+      return {'error': 'Failed to send message', 'details': response.body};
+    } catch (e) {
+      return {'error': 'Failed to connect: $e'};
     }
   }
 }
