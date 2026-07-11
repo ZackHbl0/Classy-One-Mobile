@@ -26,9 +26,9 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     const primaryBlue = Color(0xFF203B68);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final bgColor = isDark ? const Color(0xFF1E241E) : const Color(0xFFF6F7F2);
+    final cardColor = isDark ? const Color(0xFF2A322A) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2A322A);
     final subtitleColor = isDark ? Colors.white70 : const Color(0xFF64748B);
 
     return Scaffold(

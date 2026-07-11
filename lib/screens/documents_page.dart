@@ -6,6 +6,7 @@ import '../widgets/screen_header.dart';
 import '../widgets/document_detail_sheet.dart';
 import 'package:flutter_application_1/screens/new_document_request_page.dart';
 import 'package:intl/intl.dart';
+import '../widgets/custom_sidebar.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key});
@@ -50,6 +51,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      drawer: const CustomSidebar(currentRoute: '/documents'),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchRequests,
@@ -57,7 +59,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
             padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
             physics: const BouncingScrollPhysics(),
             children: [
-              const ScreenHeader(title: 'Mes Documents'),
+              const ScreenHeader(title: 'Mes Documents', showBackButton: false),
               const SizedBox(height: 24),
 
               // New Request Button
@@ -110,7 +112,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       height: 60,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF203B68), Color(0xFF3B82F6)],
+          colors: [Color(0xFF203B68), Color(0xFF708C70)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -199,7 +201,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? Colors.white.withOpacity(0.05)
-              : const Color(0xFFF1F5F9),
+              : const Color(0xFFE2E5E0),
         ),
       ),
       child: InkWell(
@@ -338,11 +340,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       child: Column(
         children: [
           SizedBox(height: 48),
-          Icon(
-            Icons.description_outlined,
-            size: 80,
-            color: Color(0x3394A3B8),
-          ),
+          Icon(Icons.description_outlined, size: 80, color: Color(0x3394A3B8)),
           SizedBox(height: 16),
           Text(
             'Aucune demande effectuée',
@@ -358,7 +356,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       case 'En attente':
         return const Color(0xFFF59E0B); // Amber
       case 'En cours':
-        return const Color(0xFF3B82F6); // Blue
+        return const Color(0xFF708C70); // Blue
       case 'Prêt':
         return const Color(0xFF10B981); // Green
       case 'Rejeté':

@@ -97,7 +97,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E241E) : Colors.white,
       body: CustomScrollView(
         slivers: [
           // Collapsing App Bar with Image
@@ -197,7 +197,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: Color(0xFF2A322A),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -237,7 +237,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: Color(0xFF2A322A),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -281,7 +281,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
+            color: const Color(0xFFE2E5E0),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: const Color(0xFF203B68), size: 20),
@@ -298,7 +298,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               Text(
                 value,
                 style: const TextStyle(
-                  color: Color(0xFF1E293B),
+                  color: Color(0xFF2A322A),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

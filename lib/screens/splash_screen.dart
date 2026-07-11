@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
-/// Splash Screen élégant avec thème vert ClassyOne
+/// Splash Screen élégant avec thème vert ClassyOne (Redesign Image 2)
 /// S'affiche pendant 3 secondes au démarrage de l'application
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -60,10 +60,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigation avec animation de fondu
     if (idStudent != null) {
-      // Utilisateur connecté → MainScreen
       Navigator.of(context).pushReplacementNamed('/main');
     } else {
-      // Utilisateur non connecté → LoginPage
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }
@@ -77,175 +75,312 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0D6B3F), // Vert foncé
-              Color(0xFF1B8C5A), // Vert moyen
-              Color(0xFF27AE60), // Vert clair
-            ],
-            stops: [0.0, 0.5, 1.0],
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Stack(
+        children: [
+          // Background top-right circle
+          Positioned(
+            top: -80,
+            right: -80,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF155331).withOpacity(0.12),
+              ),
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Cercles décoratifs en arrière-plan
-            Positioned(
-              top: -100,
-              right: -100,
+          
+          // Background top-left small circle
+          Positioned(
+            top: 150,
+            left: -100,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF155331).withOpacity(0.06),
+              ),
+            ),
+          ),
+
+          // Dot patterns (top and bottom)
+          Positioned(
+            top: 80,
+            left: MediaQuery.of(context).size.width * 0.4,
+            child: _buildDotPattern(opacity: 0.05),
+          ),
+          Positioned(
+            bottom: 150,
+            right: 20,
+            child: _buildDotPattern(opacity: 0.08),
+          ),
+
+          // Background Bottom Waves
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ClipPath(
+              clipper: _WaveClipper1(),
               child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.06),
-                ),
+                height: MediaQuery.of(context).size.height * 0.35,
+                color: const Color(0xFF4CAF50).withOpacity(0.25),
               ),
             ),
-            Positioned(
-              bottom: -150,
-              left: -100,
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ClipPath(
+              clipper: _WaveClipper2(),
               child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.06),
-                ),
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.of(context).size.height * 0.15,
-              left: -60,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
-              ),
-            ),
-
-            // Contenu principal centré
-            Center(
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Logo ClassyOne
-                          Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 12),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: Padding(
-                                padding: const EdgeInsets.all(22),
-                                child: Image.asset(
-                                  'assets/images/classyone_icon.png',
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          // Nom de l'application
-                          const Text(
-                            'ClassyOne',
-                            style: TextStyle(
-                              fontSize: 42,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Slogan / Sous-titre
-                          Text(
-                            'Votre Portail Étudiant',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.85),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-
-                          const SizedBox(height: 60),
-
-                          // Indicateur de chargement élégant
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Version de l'application en bas
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  'Version 1.0.0',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
+                height: MediaQuery.of(context).size.height * 0.28,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0D4B2A), Color(0xFF238E5E)],
+                    begin: Alignment.bottomLeft,
+                    end: Alignment.topRight,
                   ),
                 ),
               ),
             ),
-          ],
+          ),
+
+          // Main Content
+          Center(
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Logo ClassyOne
+                        Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF155331).withOpacity(0.12),
+                                blurRadius: 40,
+                                offset: const Offset(0, 15),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Image.asset(
+                                'assets/images/classyone_icon.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 35),
+
+                        // App Name
+                        const Text(
+                          'ClassyOne',
+                          style: TextStyle(
+                            fontSize: 44,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0D4B2A),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Subtitle
+                        const Text(
+                          'Votre Portail Étudiant',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF6B7280),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 60),
+
+                        // Custom animated loader
+                        _ThreeDotsLoader(),
+                        
+                        // Push everything up slightly
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Version number at the bottom
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Text(
+                'Version 1.0.0',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDotPattern({double opacity = 0.05}) {
+    return Opacity(
+      opacity: opacity,
+      child: Column(
+        children: List.generate(
+          4,
+          (i) => Row(
+            children: List.generate(
+              4,
+              (j) => Container(
+                margin: const EdgeInsets.all(4),
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0D4B2A),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
+class _ThreeDotsLoader extends StatefulWidget {
+  @override
+  State<_ThreeDotsLoader> createState() => _ThreeDotsLoaderState();
+}
+
+class _ThreeDotsLoaderState extends State<_ThreeDotsLoader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2500))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _controller.value * 2 * 3.14159,
+          child: Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: const Color(0xFF155331).withOpacity(0.1), width: 1.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF155331).withOpacity(0.3))),
+                const SizedBox(width: 4),
+                Container(
+                    width: 9,
+                    height: 9,
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: Color(0xFF155331))),
+                const SizedBox(width: 4),
+                Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF155331).withOpacity(0.3))),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WaveClipper1 extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.moveTo(0, size.height * 0.7);
+    path.quadraticBezierTo(
+        size.width * 0.3, size.height * 0.1, size.width * 0.8, size.height * 0.6);
+    path.quadraticBezierTo(
+        size.width * 0.9, size.height * 0.7, size.width, size.height * 0.6);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _WaveClipper2 extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.moveTo(0, size.height * 0.45);
+    path.quadraticBezierTo(
+        size.width * 0.4, size.height * 0.95, size.width, size.height * 0.3);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+

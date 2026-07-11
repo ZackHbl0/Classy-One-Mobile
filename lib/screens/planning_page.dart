@@ -134,8 +134,8 @@ class _PlanningPageState extends State<PlanningPage> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF6F7F2),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -147,13 +147,6 @@ class _PlanningPageState extends State<PlanningPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (Navigator.canPop(context))
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                      padding: EdgeInsets.zero,
-                      alignment: AlignmentDirectional.centerStart,
-                    ),
                   const ScreenHeader(title: 'Emploi du temps'),
                 ],
               ),
@@ -181,7 +174,7 @@ class _PlanningPageState extends State<PlanningPage> {
                           color: isSelected
                               ? primaryBlue
                               : (isDark
-                                    ? const Color(0xFF1E293B)
+                                    ? const Color(0xFF2A322A)
                                     : Colors.white),
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
@@ -241,7 +234,12 @@ class _PlanningPageState extends State<PlanningPage> {
                       child: todaysClasses.isEmpty
                           ? _buildEmptyState()
                           : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                10,
+                                20,
+                                100,
+                              ),
                               itemCount: todaysClasses.length,
                               itemBuilder: (context, index) =>
                                   _buildTimelineCard(
@@ -259,7 +257,7 @@ class _PlanningPageState extends State<PlanningPage> {
 
   // ── Timeline Card (unchanged design) ────────────────────────────────────────
   Widget _buildTimelineCard(dynamic classData, bool isDark) {
-    const accentBlue = Color(0xFF3B82F6);
+    const accentBlue = Color(0xFF708C70);
 
     final matiere = classData['matiere'] ?? 'Cours';
     final salle = classData['salle'] ?? 'Salle Non Spécifiée';
@@ -316,7 +314,7 @@ class _PlanningPageState extends State<PlanningPage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  color: isDark ? const Color(0xFF2A322A) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -335,7 +333,7 @@ class _PlanningPageState extends State<PlanningPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF2A322A),
                       ),
                     ),
                     const SizedBox(height: 8),

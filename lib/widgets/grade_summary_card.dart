@@ -41,17 +41,17 @@ class GradeSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : const Color(0xFFF1F5F9),
+              : const Color(0xFFE2E5E0),
         ),
       ),
       child: const Center(
         child: CircularProgressIndicator(
-          color: Color(0xFF6366F1),
+          color: Color(0xFF708C70),
           strokeWidth: 2,
         ),
       ),
@@ -62,7 +62,7 @@ class GradeSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFEF4444).withValues(alpha: 0.2),
@@ -92,12 +92,12 @@ class GradeSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : const Color(0xFFF1F5F9),
+              : const Color(0xFFE2E5E0),
         ),
       ),
       child: Column(

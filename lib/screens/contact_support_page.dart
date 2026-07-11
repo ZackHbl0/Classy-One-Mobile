@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../widgets/screen_header.dart';
 
 class ContactSupportPage extends StatelessWidget {
   const ContactSupportPage({super.key});
@@ -28,20 +29,14 @@ class ContactSupportPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text(
-          'Contacter l\'administration',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
+      body: Column(
+        children: [
+          const ScreenHeader(title: 'Contacter l\'administration', showBackButton: true),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
             // Header Section
             Container(
               width: double.infinity,
@@ -136,7 +131,7 @@ class ContactSupportPage extends StatelessWidget {
                         _buildActionTile(
                           context: context,
                           icon: Icons.phone_rounded,
-                          iconColor: const Color(0xFF3B82F6),
+                          iconColor: const Color(0xFF708C70),
                           title: "Appelez-nous",
                           subtitle: "Assistance téléphonique",
                           onTap: () => _launchUrl("tel:$phoneNumber"),
@@ -211,7 +206,7 @@ class ContactSupportPage extends StatelessWidget {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                      color: isDark ? Colors.white : const Color(0xFF2A322A),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -241,7 +236,7 @@ class ContactSupportPage extends StatelessWidget {
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          child: Divider(height: 1, color: Color(0xFFE2E5E0)),
                         ),
                         Row(
                           children: [
@@ -267,7 +262,7 @@ class ContactSupportPage extends StatelessWidget {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                      color: isDark ? Colors.white : const Color(0xFF2A322A),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -295,6 +290,9 @@ class ContactSupportPage extends StatelessWidget {
           ],
         ),
       ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -321,7 +319,7 @@ class ContactSupportPage extends StatelessWidget {
             border: showBorder
                 ? Border(
                     bottom: BorderSide(
-                      color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                      color: isDark ? Colors.white10 : const Color(0xFFE2E5E0),
                       width: 1,
                     ),
                   )
@@ -351,7 +349,7 @@ class ContactSupportPage extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF2A322A),
                       ),
                     ),
                     const SizedBox(height: 2),

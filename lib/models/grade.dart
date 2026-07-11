@@ -95,7 +95,7 @@ class Grade {
         case 'success':
           return const Color(0xFF10B981); // Green
         case 'info':
-          return const Color(0xFF3B82F6); // Blue
+          return const Color(0xFF708C70); // Blue
         case 'primary':
           return const Color(0xFF8B5CF6); // Purple
         case 'warning':
@@ -110,7 +110,7 @@ class Grade {
         return const Color(0xFF10B981); // Green
       case 'très bien':
       case 'tres bien':
-        return const Color(0xFF3B82F6); // Blue
+        return const Color(0xFF708C70); // Blue
       case 'bien':
         return const Color(0xFF8B5CF6); // Purple
       case 'passable':
@@ -244,7 +244,7 @@ class GradeSummary {
         return const Color(0xFF10B981);
       case 'très bien':
       case 'tres bien':
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF708C70);
       case 'bien':
         return const Color(0xFF8B5CF6);
       case 'passable':

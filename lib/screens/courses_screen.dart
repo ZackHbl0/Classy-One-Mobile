@@ -16,9 +16,12 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen>
     with SingleTickerProviderStateMixin {
   List<dynamic> _courses = [];
+  List<dynamic> _filteredCourses = [];
   bool _isLoading = true;
   String? _errorMessage;
+  String _searchQuery = '';
   late AnimationController _animationController;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -33,7 +36,19 @@ class _CoursesScreenState extends State<CoursesScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+      _filteredCourses = _courses.where((course) {
+        final title = (course['title'] ?? '').toString().toLowerCase();
+        final description = (course['description'] ?? '').toString().toLowerCase();
+        return title.contains(_searchQuery) || description.contains(_searchQuery);
+      }).toList();
+    });
   }
 
   Future<void> _fetchCourses() async {
@@ -43,11 +58,9 @@ class _CoursesScreenState extends State<CoursesScreen>
     });
 
     try {
-      // Fetch token from SharedPreferences (same storage used by AuthService)
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
 
-      // Call our new POST endpoint using centralized baseUrl
       final response = await http.post(
         Uri.parse('${AppConstants.baseUrl}/courses'),
         headers: {
@@ -62,6 +75,7 @@ class _CoursesScreenState extends State<CoursesScreen>
         if (data['success'] == true) {
           setState(() {
             _courses = data['data'] ?? [];
+            _filteredCourses = _courses;
             _isLoading = false;
           });
           _animationController.forward();
@@ -92,18 +106,8 @@ class _CoursesScreenState extends State<CoursesScreen>
     try {
       final date = DateTime.parse(isoString);
       final months = [
-        'Janv.',
-        'Févr.',
-        'Mars',
-        'Avril',
-        'Mai',
-        'Juin',
-        'Juil.',
-        'Août',
-        'Sept.',
-        'Oct.',
-        'Nov.',
-        'Déc.',
+        'Janv.', 'Févr.', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
@@ -111,29 +115,52 @@ class _CoursesScreenState extends State<CoursesScreen>
     }
   }
 
-  Color _getGradientColorForIndex(int index) {
-    // Array of beautiful gradient color pairs for diversity
-    final gradients = [
-      const [Color(0xFF818CF8), Color(0xFF6366F1)], // Indigo
-      const [Color(0xFF60A5FA), Color(0xFF3B82F6)], // Blue
-      const [Color(0xFF34D399), Color(0xFF10B981)], // Emerald
-      const [Color(0xFFFBBF24), Color(0xFFF59E0B)], // Amber
-      const [Color(0xFFF87171), Color(0xFFEF4444)], // Red
-      const [Color(0xFFA78BFA), Color(0xFF8B5CF6)], // Violet
-    ];
-    return (gradients[index % gradients.length] as List<Color>)[0];
-  }
-
-  Color _getGradientColorSecondaryForIndex(int index) {
-    final gradients = [
-      const [Color(0xFF818CF8), Color(0xFF6366F1)], // Indigo
-      const [Color(0xFF60A5FA), Color(0xFF3B82F6)], // Blue
-      const [Color(0xFF34D399), Color(0xFF10B981)], // Emerald
-      const [Color(0xFFFBBF24), Color(0xFFF59E0B)], // Amber
-      const [Color(0xFFF87171), Color(0xFFEF4444)], // Red
-      const [Color(0xFFA78BFA), Color(0xFF8B5CF6)], // Violet
-    ];
-    return (gradients[index % gradients.length] as List<Color>)[1];
+  Map<String, dynamic> _getCourseBranding(String title) {
+    final lower = title.toLowerCase();
+    if (lower.contains('c#') || lower.contains('c sharp')) {
+      return {
+        'category': 'Programmation',
+        'color': const Color(0xFF34D399),
+        'bgColor': const Color(0xFFE6F7F0),
+        'iconText': 'C#',
+      };
+    } else if (lower.contains('react')) {
+      return {
+        'category': 'Frontend',
+        'color': const Color(0xFF8B5CF6),
+        'bgColor': const Color(0xFFF3E8FF),
+        'iconText': 'React',
+      };
+    } else if (lower.contains('js') || lower.contains('javascript')) {
+      return {
+        'category': 'Frontend',
+        'color': const Color(0xFFF59E0B),
+        'bgColor': const Color(0xFFFEF3C7),
+        'iconText': 'JS',
+      };
+    } else if (lower.contains('java') && !lower.contains('javascript')) {
+      return {
+        'category': 'Backend',
+        'color': const Color(0xFFF43F5E),
+        'bgColor': const Color(0xFFFFE4E6),
+        'iconText': 'Java',
+      };
+    } else if (lower.contains('python')) {
+      return {
+        'category': 'Programmation',
+        'color': const Color(0xFF3B82F6),
+        'bgColor': const Color(0xFFEFF6FF),
+        'iconText': 'Py',
+      };
+    }
+    return {
+      'category': 'Programmation',
+      'color': const Color(0xFF34D399),
+      'bgColor': const Color(0xFFE6F7F0),
+      'iconText': title.length > 2
+          ? title.substring(0, 2).toUpperCase()
+          : title.toUpperCase(),
+    };
   }
 
   @override
@@ -141,22 +168,129 @@ class _CoursesScreenState extends State<CoursesScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF1E241E) : const Color(0xFFF8F9FA),
       body: SafeArea(
         bottom: false,
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 32.0, left: 20.0, right: 20.0, bottom: 24.0),
+              child: ScreenHeader(title: 'Mes Cours'),
+            ),
+            // Subtitle
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${_courses.length}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF34D399),
+                    ),
+                  ),
+                  Text(
+                    ' cours disponible${_courses.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? Colors.white54
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0, vertical: 8.0),
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A322A) : Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: isDark
+                      ? Border.all(
+                          color: Colors.white.withOpacity(0.05), width: 1)
+                      : Border.all(
+                          color: Colors.grey.withOpacity(0.1), width: 1),
                 ),
-              )
-            : _errorMessage != null
-            ? _buildErrorState()
-            : _courses.isEmpty
-            ? _buildEmptyState()
-            : _buildCoursesList(isDark),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search,
+                      color: isDark ? Colors.white54 : Colors.grey[400],
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: _onSearchChanged,
+                        decoration: InputDecoration(
+                          hintText: 'Rechercher un cours...',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    if (_searchQuery.isNotEmpty)
+                      GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          _onSearchChanged('');
+                        },
+                        child: Icon(
+                          Icons.close,
+                          color: isDark ? Colors.white54 : Colors.grey[400],
+                          size: 20,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Main Content Area
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF708C70)),
+                      ),
+                    )
+                  : _errorMessage != null
+                      ? _buildErrorState()
+                      : _filteredCourses.isEmpty
+                          ? _buildEmptyState()
+                          : _buildCoursesList(isDark),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -164,118 +298,68 @@ class _CoursesScreenState extends State<CoursesScreen>
   Widget _buildCoursesList(bool isDark) {
     return RefreshIndicator(
       onRefresh: _fetchCourses,
-      color: const Color(0xFF6366F1),
-      child: CustomScrollView(
+      color: const Color(0xFF708C70),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Premium Header
-          SliverAppBar(
-            expandedHeight: 140,
-            floating: false,
-            pinned: true,
-            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Match the exact header styling used by “Mes Documents”
-                      const Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: ScreenHeader(title: 'Mes Cours'),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        '${_courses.length} cours disponible${_courses.length != 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? Colors.white54
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        itemCount: _filteredCourses.length,
+        itemBuilder: (context, index) {
+          final course = _filteredCourses[index];
+
+          final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Interval(
+                (index / _filteredCourses.length).clamp(0.0, 1.0),
+                1.0,
+                curve: Curves.easeOut,
               ),
             ),
-          ),
-          // Course Cards
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final course = _courses[index];
+          );
 
-                // Micro-animation for item entry
-                final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: _animationController,
-                    curve: Interval(
-                      (index / _courses.length).clamp(0.0, 1.0),
-                      1.0,
-                      curve: Curves.easeOut,
-                    ),
-                  ),
-                );
-
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: animation,
-                    child: _buildPremiumCourseCard(course, index, isDark),
-                  ),
-                );
-              }, childCount: _courses.length),
-            ),
-          ),
-        ],
+          return FadeTransition(
+            opacity: animation,
+            child: _buildModernCourseCard(course, index, isDark),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPremiumCourseCard(dynamic course, int index, bool isDark) {
-    final primaryGradientColor = _getGradientColorForIndex(index);
-    final secondaryGradientColor = _getGradientColorSecondaryForIndex(index);
+  Widget _buildModernCourseCard(
+      dynamic course, int index, bool isDark) {
+    final title = course['title'] ?? 'Nouveau Cours';
+    final branding = _getCourseBranding(title);
+    final categoryColor = branding['color'] as Color;
+    final bgColor = isDark
+        ? categoryColor.withOpacity(0.15)
+        : (branding['bgColor'] as Color);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.06),
+                ? Colors.black.withOpacity(0.2)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 16,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.15)
-                : Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
         ],
         border: isDark
-            ? Border.all(color: Colors.white.withOpacity(0.05), width: 1)
+            ? Border.all(
+                color: Colors.white.withOpacity(0.05), width: 1)
             : null,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
+          borderRadius: BorderRadius.circular(24),
           onTap: () {
-            // Smart content routing based on file extension
             ContentRouter.routeContent(
               context,
               contentUrl: course['video_url'] ?? '',
@@ -290,254 +374,271 @@ class _CoursesScreenState extends State<CoursesScreen>
               },
             );
           },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Premium Gradient Header with Accent Bar
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [primaryGradientColor, secondaryGradientColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Subtle accent pattern background
-                    Positioned(
-                      right: -30,
-                      top: -30,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                    // Content
-                    Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.school_rounded,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  course['title'] ?? 'Nouveau Cours',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    overflow: TextOverflow.ellipsis,
-                                    letterSpacing: -0.3,
-                                  ),
-                                  maxLines: 2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Decorative bottom accent
-                          Container(
-                            height: 4,
-                            width: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Premium Card Body
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Course Description
-                    if (course['description'] != null &&
-                        course['description'].toString().isNotEmpty) ...[
-                      Text(
-                        course['description'],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.grey[700],
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 1.5,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                    ],
-                    // Metadata Row - Professor & Date
+                    // Left Colorful Logo Box
                     Container(
+                      width: 90,
+                      height: 100,
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          // Professor Info
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        primaryGradientColor.withOpacity(0.8),
-                                        secondaryGradientColor.withOpacity(0.8),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.person_rounded,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Professeur',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDark
-                                              ? Colors.white38
-                                              : Colors.grey[500],
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        course['professor_name'] ?? 'N/A',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? Colors.white
-                                              : const Color(0xFF1E293B),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        maxLines: 1,
-                                      ),
-                                    ],
-                                  ),
+                          Positioned(
+                            top: -10,
+                            right: -10,
+                            child: Icon(Icons.circle,
+                                color: categoryColor.withOpacity(0.1),
+                                size: 40),
+                          ),
+                          Positioned(
+                            bottom: 10,
+                            left: 10,
+                            child: Icon(Icons.star,
+                                color: categoryColor.withOpacity(0.15),
+                                size: 16),
+                          ),
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF2A322A)
+                                  : Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: categoryColor.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
+                            alignment: Alignment.center,
+                            child: branding['iconText'] == 'React'
+                                ? Icon(Icons.science,
+                                    color: categoryColor, size: 30)
+                                : branding['iconText'] == 'Java'
+                                    ? Icon(Icons.local_cafe,
+                                        color: categoryColor, size: 28)
+                                    : Text(
+                                        branding['iconText'],
+                                        style: TextStyle(
+                                          color: categoryColor,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                           ),
-                          // Divider
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Container(
-                              width: 1,
-                              height: 24,
-                              color: isDark
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.grey[300],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Right Content Area
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Category Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: categoryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              branding['category'],
+                              style: TextStyle(
+                                color: categoryColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                          // Date Info
-                          Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withOpacity(0.1)
-                                      : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.calendar_month_rounded,
-                                  color: isDark
-                                      ? Colors.white54
-                                      : Colors.grey[600],
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Publié',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white38
-                                          : Colors.grey[500],
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _formatDate(course['created_at']),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? Colors.white
-                                          : const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 8),
+
+                          // Title
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Description
+                          Text(
+                            course['description'] ??
+                                'Aucune description disponible pour ce cours.',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white60
+                                  : const Color(0xFF64748B),
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+                Container(
+                  height: 1,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.grey.withOpacity(0.15),
+                ),
+                const SizedBox(height: 12),
+
+                // Bottom Metadata Row
+                Row(
+                  children: [
+                    _buildMetaIcon(Icons.person_outline, isDark),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Professeur',
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white38
+                                  : Colors.grey[500],
+                              fontSize: 10,
+                            ),
+                          ),
+                          Text(
+                            course['professor_name'] ?? 'Inconnu',
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        width: 1,
+                        height: 24,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.2),
+                      ),
+                    ),
+
+                    _buildMetaIcon(
+                        Icons.calendar_today_outlined, isDark),
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Publié le',
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white38
+                                : Colors.grey[500],
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          _formatDate(course['created_at']),
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Action Arrow
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                        border: isDark
+                            ? null
+                            : Border.all(
+                                color: Colors.grey.withOpacity(0.2)),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: categoryColor,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMetaIcon(IconData icon, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : const Color(0xFFF1F5F9),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        size: 14,
+        color: isDark ? Colors.white60 : const Color(0xFF64748B),
       ),
     );
   }
@@ -552,13 +653,13 @@ class _CoursesScreenState extends State<CoursesScreen>
             Container(
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.08),
+                color: const Color(0xFF708C70).withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.class_outlined,
                 size: 80,
-                color: Color(0xFF6366F1),
+                color: Color(0xFF708C70),
               ),
             ),
             const SizedBox(height: 24),
@@ -567,7 +668,7 @@ class _CoursesScreenState extends State<CoursesScreen>
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: Color(0xFF2A322A),
               ),
             ),
             const SizedBox(height: 8),
@@ -586,7 +687,7 @@ class _CoursesScreenState extends State<CoursesScreen>
               icon: const Icon(Icons.refresh),
               label: const Text('Actualiser'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: const Color(0xFF708C70),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -610,7 +711,8 @@ class _CoursesScreenState extends State<CoursesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+            const Icon(Icons.error_outline,
+                size: 64, color: Colors.redAccent),
             const SizedBox(height: 20),
             Text(
               _errorMessage ?? 'Une erreur est survenue',
@@ -625,7 +727,7 @@ class _CoursesScreenState extends State<CoursesScreen>
             ElevatedButton(
               onPressed: _fetchCourses,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: const Color(0xFF708C70),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

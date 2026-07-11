@@ -81,11 +81,11 @@ class _PaiementPageState extends State<PaiementPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF203B68),
+                color: Theme.of(context).primaryColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF203B68).withOpacity(0.3),
+                    color: Theme.of(context).primaryColor.withOpacity(0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -212,7 +212,7 @@ class _PaiementPageState extends State<PaiementPage> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 24, color: const Color(0xFF1E293B)),
+        Icon(icon, size: 24, color: const Color(0xFF2A322A)),
         const SizedBox(width: 12),
         Text(
           title,
@@ -234,7 +234,7 @@ class _PaiementPageState extends State<PaiementPage> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? Colors.white.withOpacity(0.05)
@@ -359,7 +359,10 @@ class _PaiementPageState extends State<PaiementPage> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF203B68),
+              backgroundColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Réessayer'),
           ),

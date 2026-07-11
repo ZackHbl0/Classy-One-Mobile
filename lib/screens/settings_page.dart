@@ -5,6 +5,8 @@ import '../providers/theme_provider.dart';
 import '../widgets/premium_switch.dart';
 import 'contact_support_page.dart';
 import 'about_page.dart';
+import '../widgets/screen_header.dart';
+import '../widgets/custom_sidebar.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,28 +25,25 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text(
-          'Paramètres',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
-        ),
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: _buildContent(
-        settingsProvider,
-        themeProvider,
-        context,
-        isDark,
-        primaryColor,
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF6F7F2),
+      drawer: const CustomSidebar(currentRoute: '/settings'),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 32, 20, 0),
+            child: ScreenHeader(title: 'Paramètres', showBackButton: false),
+          ),
+          Expanded(
+            child: _buildContent(
+              settingsProvider,
+              themeProvider,
+              context,
+              isDark,
+              primaryColor,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -146,7 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsCard(List<Widget> children, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: isDark
             ? Border.all(color: Colors.white.withOpacity(0.05))
@@ -177,7 +176,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     final color = isDestructive
         ? Colors.redAccent
-        : (isDark ? Colors.white : const Color(0xFF1E293B));
+        : (isDark ? Colors.white : const Color(0xFF2A322A));
 
     return Material(
       color: Colors.transparent,
@@ -190,7 +189,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     bottom: BorderSide(
                       color: isDark
                           ? Colors.white.withOpacity(0.05)
-                          : const Color(0xFFF1F5F9),
+                          : const Color(0xFFE2E5E0),
                       width: 1,
                     ),
                   )
@@ -257,7 +256,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 bottom: BorderSide(
                   color: isDark
                       ? Colors.white.withOpacity(0.05)
-                      : const Color(0xFFF1F5F9),
+                      : const Color(0xFFE2E5E0),
                   width: 1,
                 ),
               )
@@ -282,7 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                color: isDark ? Colors.white : const Color(0xFF2A322A),
               ),
             ),
           ),

@@ -174,8 +174,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF1A1F3D);
-    const lightBg = Color(0xFFF1F5F9);
+    const primarySage = Color(0xFF4A6741); // Deep Sage Green
+    const lightBg = Color(0xFFE2E5E0);   // Soft sage-grey background
 
     return Scaffold(
       backgroundColor: lightBg,
@@ -186,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFE2E8F0), Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
+            colors: [Color(0xFFE2E5E0), Color(0xFFF6F7F2), Color(0xFFE2E5E0)],
           ),
         ),
         child: SafeArea(
@@ -247,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
                               style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
-                                color: primaryBlue,
+                                color: primarySage,
                                 height: 1.2,
                                 letterSpacing: -0.5,
                               ),
@@ -322,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: primaryBlue,
+                                        color: primarySage,
                                       ),
                                     ),
                                   ),
@@ -340,7 +340,7 @@ class _LoginPageState extends State<LoginPage> {
                                   width: 24,
                                   child: Checkbox(
                                     value: _rememberMe,
-                                    activeColor: primaryBlue,
+                                    activeColor: primarySage,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(4),
                                     ),
@@ -372,15 +372,15 @@ class _LoginPageState extends State<LoginPage> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _login,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryBlue,
+                                  backgroundColor: primarySage,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: primaryBlue
-                                      .withOpacity(0.7),
+                                  disabledBackgroundColor: primarySage
+                                      .withValues(alpha: 0.7),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
                                   ),
                                   elevation: 8,
-                                  shadowColor: primaryBlue.withOpacity(0.4),
+                                  shadowColor: primarySage.withValues(alpha: 0.4),
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
@@ -422,7 +422,7 @@ class _LoginPageState extends State<LoginPage> {
                                 children: [
                                   _InteractiveSocialIcon(
                                     icon: FontAwesomeIcons.facebookF,
-                                    defaultColor: primaryBlue,
+                                    defaultColor: primarySage,
                                     hoverColor: const Color(0xFF1877F2),
                                     size: 22,
                                     onTap: () => _launchURL(
@@ -432,7 +432,7 @@ class _LoginPageState extends State<LoginPage> {
                                   const SizedBox(width: 12),
                                   _InteractiveSocialIcon(
                                     icon: Icons.mail_outline,
-                                    defaultColor: primaryBlue,
+                                    defaultColor: primarySage,
                                     hoverColor: const Color(0xFFEA4335),
                                     size: 22,
                                     onTap: () =>
@@ -441,7 +441,7 @@ class _LoginPageState extends State<LoginPage> {
                                   const SizedBox(width: 12),
                                   _InteractiveSocialIcon(
                                     icon: FontAwesomeIcons.whatsapp,
-                                    defaultColor: primaryBlue,
+                                    defaultColor: primarySage,
                                     hoverColor: const Color(0xFF25D366),
                                     size: 22,
                                     onTap: () => _launchURL(
@@ -451,7 +451,7 @@ class _LoginPageState extends State<LoginPage> {
                                   const SizedBox(width: 12),
                                   _InteractiveSocialIcon(
                                     icon: FontAwesomeIcons.instagram,
-                                    defaultColor: primaryBlue,
+                                    defaultColor: primarySage,
                                     hoverColor: const Color(0xFFE4405F),
                                     size: 22,
                                     onTap: () => _launchURL(
@@ -495,7 +495,7 @@ class _LoginPageState extends State<LoginPage> {
       style: const TextStyle(fontSize: 15, color: Colors.black87),
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: const Color(0xFFF6F7F2),
         hintText: hintText,
         hintStyle: TextStyle(
           color: Colors.black.withOpacity(0.3),
@@ -597,7 +597,7 @@ class _InteractiveSocialIconState extends State<_InteractiveSocialIcon> {
                 decoration: BoxDecoration(
                   color: _isHovered
                       ? widget.hoverColor.withOpacity(0.08)
-                      : const Color(0xFFF1F5F9).withOpacity(0.8),
+                      : const Color(0xFFE2E5E0).withOpacity(0.8),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _isHovered

@@ -557,11 +557,13 @@ class AuthService {
       }
 
       if (audioBytes != null && audioName != null) {
+        final ext = audioName.split('.').last.toLowerCase();
+        final mimeType = ext == 'webm' ? 'webm' : 'mp4'; // fallback mp4 for m4a
         request.files.add(http.MultipartFile.fromBytes(
           'audio', 
           audioBytes,
           filename: audioName,
-          contentType: MediaType('audio', 'm4a'),
+          contentType: MediaType('audio', mimeType),
         ));
       }
 
@@ -574,6 +576,44 @@ class AuthService {
       return {'error': 'Failed to send message', 'details': response.body};
     } catch (e) {
       return {'error': 'Failed to connect: $e'};
+    }
+  }
+
+  // ─── Absences Methods ──────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getAbsences() async {
+    final url = Uri.parse('$baseUrl/student/absences');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Failed to load absences: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> submitJustification(int absenceId, String reason) async {
+    final url = Uri.parse('$baseUrl/student/absences/$absenceId/justify');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'reason': reason}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Failed to submit justification: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection error: $e'};
     }
   }
 }

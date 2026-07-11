@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/screen_header.dart';
 
 class PasswordChangePage extends StatefulWidget {
   const PasswordChangePage({super.key});
@@ -63,31 +64,21 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    final primaryColor = const Color(0xFF1A365D);
+    final primaryColor = const Color(0xFF2D3A2D);
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF1F5F9),
-      appBar: AppBar(
-        title: const Text(
-          'Changer le mot de passe',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-        ),
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        foregroundColor: isDark ? Colors.white : primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Form(
-          key: _formKey,
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFE2E5E0),
+      body: Column(
+        children: [
+          const ScreenHeader(title: 'Changer le mot de passe', showBackButton: true),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Form(
+                key: _formKey,
           child: Column(
             children: [
               // Security Icon Header
@@ -121,7 +112,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  color: isDark ? const Color(0xFF2A322A) : Colors.white,
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
@@ -217,6 +208,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
           ),
         ),
       ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -233,7 +227,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       obscureText: obscure,
       style: TextStyle(
         fontWeight: FontWeight.w600,
-        color: isDark ? Colors.white : const Color(0xFF1E293B),
+        color: isDark ? Colors.white : const Color(0xFF2A322A),
       ),
       validator:
           validator ??
@@ -249,7 +243,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         filled: true,
         fillColor: isDark
             ? Colors.white.withOpacity(0.05)
-            : const Color(0xFFF8FAFC),
+            : const Color(0xFFF6F7F2),
         prefixIcon: Icon(
           Icons.lock_outline_rounded,
           size: 20,
@@ -262,7 +256,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: const Color(0xFF1A365D).withOpacity(0.5),
+            color: const Color(0xFF2D3A2D).withOpacity(0.5),
             width: 1.5,
           ),
         ),

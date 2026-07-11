@@ -6,6 +6,8 @@ import '../providers/notification_provider.dart';
 import '../screens/notifications_page.dart';
 import '../screens/profile_page.dart';
 import '../screens/professors_list_screen.dart';
+import '../screens/recent_chats_screen.dart';
+import '../screens/main_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GlobalAppHeader
@@ -25,7 +27,7 @@ import '../screens/professors_list_screen.dart';
 //     pageTitle: 'Documents',
 //   )
 // ─────────────────────────────────────────────────────────────────────────────
-class GlobalAppHeader extends StatelessWidget {
+class GlobalAppHeader extends StatelessWidget implements PreferredSizeWidget {
   // ── Greeting mode ──────────────────────────────────────────────────────────
   final String? greeting;   // e.g. 'Bonjour,'
   final String? userName;   // e.g. 'Ahmed Mkhier'
@@ -60,94 +62,156 @@ class GlobalAppHeader extends StatelessWidget {
     this.showBackButton = false,
     this.onNotificationTap,
     this.onProfileTap,
-    this.padding = const EdgeInsets.fromLTRB(20, 56, 20, 0),
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
   });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
 
   // ───────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isGreetingMode = greeting != null || userName != null;
 
-    return Padding(
-      padding: padding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // ── Back Button ───────────────────────────────────────────────────
-          if ((showBackButton ?? false) == true) ...[
-            _ActionButton(
-              child: Icon(
-                Icons.arrow_back_ios_new,
-                size: 18,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+    return Container(
+      color: Colors.transparent,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          height: 56,
+          padding: padding,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // ── Left: Profile Avatar / Sidebar Trigger ──
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ((showBackButton ?? false) == true)
+                      ? _ActionButton(
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 18,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                          onTap: () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
+                        )
+                      : GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
+                              Scaffold.of(context).openDrawer();
+                            } else {
+                              MainScreen.scaffoldKey.currentState?.openDrawer();
+                            }
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            color: Colors.transparent, // to increase tap target
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: 16,
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: 24,
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
               ),
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(width: 8),
-          ],
 
-          // ── Left side ─────────────────────────────────────────────────────
-          if (isGreetingMode) ...[
-            _Avatar(url: avatarUrl, isDark: isDark),
-            const SizedBox(width: 14),
-            Expanded(child: _GreetingText(
-              greeting: greeting ?? 'Bonjour,',
-              userName: userName ?? '',
-              subtitle: subtitle,
-              isDark: isDark,
-            )),
-          ] else ...[
-            Expanded(child: _PageTitle(title: pageTitle ?? '', isDark: isDark)),
-          ],
+              // ── Center: Brand Identity ──
+              Expanded(
+                child: (pageTitle != null && pageTitle!.isNotEmpty)
+                    ? _PageTitle(title: pageTitle!, isDark: isDark)
+                    : Center(
+                        child: Image.asset(
+                          'assets/images/classyone_icon.png',
+                          height: 56,
+                        ),
+                      ),
+              ),
 
-          // ── Action icons ──────────────────────────────────────────────────
-          if ((showNotification ?? true) == true) ...[
-            const SizedBox(width: 4),
-            _ActionButton(
-              child: Icon(
-                Icons.chat_bubble_outline,
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
-                size: 22,
+              // ── Right: Action Notification ──
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: ((showNotification ?? true) == true)
+                      ? Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark
+                                    ? Colors.black26
+                                    : Theme.of(context).primaryColor.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(50),
+                              onTap: onNotificationTap ??
+                                  () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const NotificationsPage()),
+                                    );
+                                  },
+                              child: Center(
+                                child: _NotifIcon(isDark: isDark),
+                              ),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfessorsListScreen()),
-                );
-              },
-            ),
-            const SizedBox(width: 2),
-            _ActionButton(
-              child: _NotifIcon(isDark: isDark),
-              onTap: onNotificationTap ?? () {
-                HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                );
-              },
-            ),
-          ],
-          if ((showProfile ?? true) == true) ...[
-            const SizedBox(width: 2),
-            _ActionButton(
-              child: Icon(
-                Icons.person_outline_rounded,
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
-                size: 22,
-              ),
-              onTap: onProfileTap ?? () {
-                HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
-                );
-              },
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -159,26 +223,21 @@ class GlobalAppHeader extends StatelessWidget {
 class _Avatar extends StatelessWidget {
   final String? url;
   final bool isDark;
+  final double size;
 
-  const _Avatar({this.url, required this.isDark});
+  const _Avatar({this.url, required this.isDark, this.size = 48});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 48,
-      height: 48,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
         shape: BoxShape.circle,
-        gradient: url == null
-            ? const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.25),
+            color: Theme.of(context).primaryColor.withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -201,12 +260,9 @@ class _PlaceholderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
+        shape: BoxShape.circle,
       ),
       child: const Icon(
         Icons.person_rounded,
@@ -251,11 +307,14 @@ class _GreetingText extends StatelessWidget {
         const SizedBox(height: 1),
         Text(
           userName,
-          style: GoogleFonts.inter(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontSize: 19,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
-            letterSpacing: -0.4,
+            color: isDark ? Colors.white : const Color(0xFF2D3A2D),
+          ) ?? GoogleFonts.inter(
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF2D3A2D),
+            letterSpacing: -0.3,
           ),
           overflow: TextOverflow.ellipsis,
         ),
@@ -289,11 +348,16 @@ class _PageTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.inter(
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+        color: isDark ? Colors.white : const Color(0xFF2D3A2D),
+      ) ?? GoogleFonts.inter(
         fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: isDark ? Colors.white : const Color(0xFF0F172A),
-        letterSpacing: -0.5,
+        fontWeight: FontWeight.w600,
+        color: isDark ? Colors.white : const Color(0xFF2D3A2D),
+        letterSpacing: -0.4,
       ),
     );
   }

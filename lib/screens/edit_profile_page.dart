@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'password_change_page.dart';
 import 'phone_update_page.dart';
+import '../widgets/screen_header.dart';
+
 
 class EditProfilePage extends StatelessWidget {
   const EditProfilePage({super.key});
@@ -11,22 +13,16 @@ class EditProfilePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
+          ? const Color(0xFF1E241E)
           : const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'Modifier le profil',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        physics: const BouncingScrollPhysics(),
+      body: Column(
         children: [
+          const ScreenHeader(title: 'Modifier le profil', showBackButton: true),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              physics: const BouncingScrollPhysics(),
+              children: [
           _buildSettingsCard([
             _buildListTile(
               Icons.lock_outline_rounded,
@@ -54,6 +50,9 @@ class EditProfilePage extends StatelessWidget {
               },
             ),
           ], isDark),
+            ],
+          ),
+          ),
         ],
       ),
     );
@@ -62,7 +61,7 @@ class EditProfilePage extends StatelessWidget {
   Widget _buildSettingsCard(List<Widget> children, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF2A322A) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

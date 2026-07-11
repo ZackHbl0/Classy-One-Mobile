@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../widgets/screen_header.dart';
 
 class NewDocumentRequestPage extends StatefulWidget {
   const NewDocumentRequestPage({super.key});
@@ -22,12 +23,12 @@ class _NewDocumentRequestPageState extends State<NewDocumentRequestPage>
   String _selectedUrgency = 'normal';
   bool _isSubmitting = false;
 
-  static const _primaryNavy  = Color(0xFF1A365D);
-  static const _primaryBlue  = Color(0xFF3B82F6);
+  static const _primaryNavy  = Color(0xFF2D3A2D);
+  static const _primaryBlue  = Color(0xFF708C70);
   static const _urgentAmber  = Color(0xFFF59E0B);
-  static const _surfaceGrey  = Color(0xFFF1F5F9);
+  static const _surfaceGrey  = Color(0xFFE2E5E0);
   static const _textMuted    = Color(0xFF64748B);
-  static const _textDark     = Color(0xFF0F172A);
+  static const _textDark     = Color(0xFF1E241E);
 
   final List<Map<String, dynamic>> _docTypes = [
     {'label': 'Certificat de scolarité',    'icon': Icons.school_outlined},
@@ -174,9 +175,12 @@ class _NewDocumentRequestPageState extends State<NewDocumentRequestPage>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(),
-      body: FadeTransition(
-        opacity: _fadeAnim,
+      body: Column(
+        children: [
+          const ScreenHeader(title: 'Nouvelle demande', showBackButton: true),
+          Expanded(
+            child: FadeTransition(
+              opacity: _fadeAnim,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
           child: Column(
@@ -297,37 +301,9 @@ class _NewDocumentRequestPageState extends State<NewDocumentRequestPage>
           ),
         ),
       ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      leading: InkWell(
-        onTap: () => Navigator.pop(context),
-        borderRadius: BorderRadius.circular(12),
-        child: const Padding(
-          padding: EdgeInsets.all(10),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: _textDark,
-            size: 20,
-          ),
-        ),
       ),
-      title: Text(
-        'Nouvelle demande',
-        style: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: isDark ? Colors.white : _textDark,
-          letterSpacing: -0.3,
-        ),
+      ],
       ),
-      centerTitle: true,
     );
   }
 }
@@ -347,19 +323,19 @@ class _PageHint extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6).withValues(alpha: 0.07),
+        color: const Color(0xFF708C70).withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+          Icon(icon, color: const Color(0xFF708C70), size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: const Color(0xFF3B82F6),
+                color: const Color(0xFF708C70),
                 height: 1.4,
                 fontWeight: FontWeight.w500,
               ),
@@ -449,12 +425,12 @@ class _PremiumDropdown extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9),
+        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFE2E5E0),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Icon(_iconFor(value), color: const Color(0xFF3B82F6), size: 20),
+          Icon(_iconFor(value), color: const Color(0xFF708C70), size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -468,7 +444,7 @@ class _PremiumDropdown extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF1E241E),
                 ),
                 items: items.map((item) {
                   return DropdownMenuItem<String>(
@@ -524,7 +500,7 @@ class _UrgencyChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? activeColor.withValues(alpha: 0.1)
-            : (isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9)),
+            : (isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFE2E5E0)),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isSelected ? activeColor : Colors.transparent,
@@ -589,13 +565,13 @@ class _SubmitButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFF1A365D), Color(0xFF2563EB)],
+            colors: [Color(0xFF2D3A2D), Color(0xFF708C70)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A365D).withValues(alpha: 0.35),
+              color: const Color(0xFF2D3A2D).withValues(alpha: 0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

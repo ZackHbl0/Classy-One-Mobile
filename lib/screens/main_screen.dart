@@ -3,11 +3,14 @@ import 'dashboard_page.dart';
 import 'planning_page.dart';
 import 'evenements_page.dart';
 import 'paiement_page.dart';
-import 'documents_page.dart';
+import 'profile_page.dart';
 import '../widgets/modern_nav_bar.dart';
+import '../widgets/custom_sidebar.dart';
 import 'courses_screen.dart';
 
 class MainScreen extends StatefulWidget {
+  static final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   const MainScreen({super.key});
 
   @override
@@ -21,9 +24,8 @@ class _MainScreenState extends State<MainScreen> {
     const DashboardPage(),
     const PlanningPage(),
     const CoursesScreen(),
-    const EvenementsPage(),
     const PaiementPage(showBackButton: false),
-    const DocumentsPage(),
+    const ProfilePage(),
   ];
 
   // ── Icon pairs: outline (inactive) → filled (active) ───────────────────────
@@ -44,19 +46,14 @@ class _MainScreenState extends State<MainScreen> {
       label: 'Cours',
     ),
     NavBarItem(
-      icon: Icons.event_outlined,
-      activeIcon: Icons.event_rounded,
-      label: 'Événements',
-    ),
-    NavBarItem(
       icon: Icons.credit_card_outlined,
       activeIcon: Icons.credit_card_rounded,
-      label: 'Paiements',
+      label: 'Paiement',
     ),
     NavBarItem(
-      icon: Icons.description_outlined,
-      activeIcon: Icons.description_rounded,
-      label: 'Documents',
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'Profil',
     ),
   ];
 
@@ -65,10 +62,12 @@ class _MainScreenState extends State<MainScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      key: MainScreen.scaffoldKey,
       extendBody: false,
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8F9FE),
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF6F7F2),
+      drawer: const CustomSidebar(currentRoute: '/home'),
       body: SafeArea(
         bottom: false,
         child: IndexedStack(index: _currentIndex, children: _pages),

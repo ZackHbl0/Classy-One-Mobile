@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'chat_screen.dart';
+import '../widgets/screen_header.dart';
 
 class ProfessorsListScreen extends StatefulWidget {
   const ProfessorsListScreen({super.key});
@@ -37,19 +38,12 @@ class _ProfessorsListScreenState extends State<ProfessorsListScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Professeurs & Admin',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-        iconTheme: IconThemeData(
-          color: isDark ? Colors.white : Colors.black,
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: Column(
+        children: [
+          const ScreenHeader(title: 'Professeurs & Admin', showBackButton: true),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
           : _professors.isEmpty
               ? Center(
                   child: Text(
@@ -67,7 +61,7 @@ class _ProfessorsListScreenState extends State<ProfessorsListScreen> {
                     final prof = _professors[index];
                     return Card(
                       elevation: 0,
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      color: isDark ? const Color(0xFF2A322A) : Colors.white,
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -81,11 +75,11 @@ class _ProfessorsListScreenState extends State<ProfessorsListScreen> {
                         leading: CircleAvatar(
                           radius: 24,
                           backgroundColor:
-                              const Color(0xFF3B82F6).withOpacity(0.1),
+                              const Color(0xFF708C70).withOpacity(0.1),
                           child: Text(
                             prof['name']?.substring(0, 1).toUpperCase() ?? 'P',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF3B82F6),
+                              color: const Color(0xFF708C70),
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -107,7 +101,7 @@ class _ProfessorsListScreenState extends State<ProfessorsListScreen> {
                         ),
                         trailing: const Icon(
                           Icons.chat_bubble_outline,
-                          color: Color(0xFF3B82F6),
+                          color: Color(0xFF708C70),
                         ),
                         onTap: () {
                           Navigator.push(
@@ -127,6 +121,9 @@ class _ProfessorsListScreenState extends State<ProfessorsListScreen> {
                     );
                   },
                 ),
+          ),
+        ],
+      ),
     );
   }
 }

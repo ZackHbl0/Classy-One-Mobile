@@ -5,6 +5,7 @@ import '../widgets/screen_header.dart';
 import '../models/event_model.dart';
 import 'event_detail_page.dart';
 import 'package:intl/intl.dart';
+import '../widgets/custom_sidebar.dart';
 
 class EvenementsPage extends StatefulWidget {
   const EvenementsPage({super.key});
@@ -71,8 +72,9 @@ class _EvenementsPageState extends State<EvenementsPage> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF6F7F2),
+      drawer: const CustomSidebar(currentRoute: '/evenements'),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -82,14 +84,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (Navigator.canPop(context))
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                      padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft,
-                    ),
-                  const ScreenHeader(title: 'Événements'),
+                  const ScreenHeader(title: 'Événements', showBackButton: false),
                   const SizedBox(height: 16),
 
                   // Filter Chips
@@ -248,7 +243,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
           border: Border.all(
             color: isDark
                 ? Colors.white.withOpacity(0.05)
-                : const Color(0xFFF1F5F9),
+                : const Color(0xFFE2E5E0),
             width: 1,
           ),
           boxShadow: [

@@ -7,11 +7,14 @@
 import 'package:flutter/material.dart';
 import 'global_app_header.dart';
 
-class ScreenHeader extends StatelessWidget {
+class ScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String? subtitle;
   final bool? showIcons;
   final bool? showBackButton;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
 
   const ScreenHeader({
     super.key,
@@ -28,9 +31,6 @@ class ScreenHeader extends StatelessWidget {
       showNotification: showIcons ?? true,
       showProfile:      showIcons ?? true,
       showBackButton:   showBackButton ?? false,
-      // Page screens are already inside a SafeArea-padded ListView so no
-      // extra top inset is needed here.
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
     );
   }
 }

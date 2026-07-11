@@ -19,17 +19,7 @@ class NavBarItem {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CustomModernNavBar  – Ultra-slim glassmorphic bottom bar
-//
-// Design:
-//  • Height: 60 px (bar) + system padding
-//  • Active state: icon switches to solid + primary-blue colour
-//                  + a tiny glowing dot underneath
-//                  + label fades in below dot
-//  • Inactive: thin-line outline icon, slate-grey colour — no label
-//  • Tap: bounce scale 1.0 → 1.25 → 1.0 with haptic
-//  • Background: BackdropFilter blur 20 + semi-transparent white
-//  • No large pill / circle background behind icons
+// CustomModernNavBar  – Pill-shaped bottom bar matching img1
 // ─────────────────────────────────────────────────────────────────────────────
 class CustomModernNavBar extends StatefulWidget {
   final int currentIndex;
@@ -54,12 +44,7 @@ class _CustomModernNavBarState extends State<CustomModernNavBar>
   late List<Animation<double>> _bounceAnims;
 
   // ── design tokens ────────────────────────────────────────────────────────
-  static const _blue = Color(0xFF0066FF); // Vibrant Primary Blue
-  static const _inactiveL = Color(
-    0xFF64748B,
-  ); // Medium Slate Grey (High contrast)
-  static const _inactiveD = Color(0xFF94A3B8); // Slate for Dark Mode
-  static const _barHeight = 68.0; // Increased from 62 to prevent overflow
+  static const _barHeight = 85.0; 
 
   @override
   void initState() {
@@ -72,9 +57,9 @@ class _CustomModernNavBarState extends State<CustomModernNavBar>
     });
     _bounceAnims = _bounceControllers.map((ctrl) {
       return TweenSequence<double>([
-        TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.28), weight: 40),
-        TweenSequenceItem(tween: Tween(begin: 1.28, end: 0.92), weight: 30),
-        TweenSequenceItem(tween: Tween(begin: 0.92, end: 1.0), weight: 30),
+        TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.15), weight: 40),
+        TweenSequenceItem(tween: Tween(begin: 1.15, end: 0.95), weight: 30),
+        TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 30),
       ]).animate(CurvedAnimation(parent: ctrl, curve: Curves.easeInOut));
     }).toList();
   }
@@ -99,46 +84,43 @@ class _CustomModernNavBarState extends State<CustomModernNavBar>
     final isDark = theme.brightness == Brightness.dark;
     final mq = MediaQuery.of(context);
     final bottom = mq.padding.bottom;
+    
+    final primaryColor = theme.primaryColor;
+    final bgColor = isDark ? const Color(0xFF1E241E) : Colors.white;
+    final inactiveColor = isDark ? Colors.white70 : const Color(0xFF64748B);
 
-    return SizedBox(
-      height: _barHeight + bottom,
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            height: _barHeight + bottom,
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor.withValues(
-                alpha: isDark ? 0.85 : 0.88,
-              ),
-              border: Border(
-                top: BorderSide(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.black.withValues(alpha: 0.05),
-                  width: 0.8,
-                ),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottom),
-              child: Row(
-                children: List.generate(widget.items.length, (i) {
-                  return Expanded(
-                    child: _NavItem(
-                      item: widget.items[i],
-                      isActive: widget.currentIndex == i,
-                      bounceAnim: _bounceAnims[i],
-                      activeColor: _blue,
-                      inactiveColor: isDark ? _inactiveD : _inactiveL,
-                      onTap: () => _handleTap(i),
-                      isDark: isDark,
-                    ),
-                  );
-                }),
-              ),
-            ),
+    return Container(
+      margin: EdgeInsets.fromLTRB(16, 0, 16, bottom == 0 ? 20 : bottom),
+      height: _barHeight,
+      decoration: BoxDecoration(
+        color: bgColor, 
+        borderRadius: BorderRadius.circular(40),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(widget.items.length, (i) {
+            return Expanded(
+              child: _NavItem(
+                item: widget.items[i],
+                isActive: widget.currentIndex == i,
+                bounceAnim: _bounceAnims[i],
+                activeColor: primaryColor,
+                inactiveColor: inactiveColor,
+                onTap: () => _handleTap(i),
+                isDark: isDark,
+              ),
+            );
+          }),
         ),
       ),
     );
@@ -146,7 +128,7 @@ class _CustomModernNavBarState extends State<CustomModernNavBar>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _NavItem  – single icon + optional label + glow dot
+// _NavItem  – vertical column with icon, text, and active indicator
 // ─────────────────────────────────────────────────────────────────────────────
 class _NavItem extends StatefulWidget {
   final NavBarItem item;
@@ -171,143 +153,75 @@ class _NavItem extends StatefulWidget {
   State<_NavItem> createState() => _NavItemState();
 }
 
-class _NavItemState extends State<_NavItem>
-    with SingleTickerProviderStateMixin {
-  // Slide-in controller for the label + dot
-  late AnimationController _labelCtrl;
-  late Animation<double> _labelOpacity;
-  late Animation<double> _labelSlide;
-
-  @override
-  void initState() {
-    super.initState();
-    _labelCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 240),
-    );
-    _labelOpacity = CurvedAnimation(
-      parent: _labelCtrl,
-      curve: Curves.easeInOut,
-    );
-    _labelSlide = Tween(
-      begin: 8.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _labelCtrl, curve: Curves.easeInOut));
-    if (widget.isActive) _labelCtrl.value = 1.0;
-  }
-
-  @override
-  void didUpdateWidget(_NavItem old) {
-    super.didUpdateWidget(old);
-    if (widget.isActive && !old.isActive) {
-      _labelCtrl.forward(from: 0.0);
-    } else if (!widget.isActive && old.isActive) {
-      _labelCtrl.reverse();
-    }
-  }
-
-  @override
-  void dispose() {
-    _labelCtrl.dispose();
-    super.dispose();
-  }
-
+class _NavItemState extends State<_NavItem> {
   @override
   Widget build(BuildContext context) {
+    final displayColor = widget.isActive ? widget.activeColor : widget.inactiveColor;
+    
     return GestureDetector(
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 66, // Increased from 60 to prevent overflow
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // ── Bounce-animated icon ───────────────────────────────────────
-            AnimatedBuilder(
-              animation: widget.bounceAnim,
-              builder: (_, child) =>
-                  Transform.scale(scale: widget.bounceAnim.value, child: child),
-              child: AnimatedScale(
-                scale: widget.isActive ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, anim) =>
-                      ScaleTransition(scale: anim, child: child),
-                  child: Icon(
-                    widget.isActive ? widget.item.activeIcon : widget.item.icon,
-                    key: ValueKey(widget.isActive),
-                    color: widget.isActive
-                        ? widget.activeColor
-                        : widget.inactiveColor,
-                    size: 23, // Reduced from 24 to save space
-                  ),
+      child: AnimatedBuilder(
+        animation: widget.bounceAnim,
+        builder: (context, child) => Transform.scale(
+          scale: widget.bounceAnim.value,
+          child: child,
+        ),
+        child: Center(
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isActive ? 14.0 : 4.0, 
+                  vertical: 10.0
+                ),
+                decoration: BoxDecoration(
+                  color: widget.isActive 
+                    ? (widget.isDark ? widget.activeColor.withOpacity(0.15) : widget.activeColor.withOpacity(0.08)) 
+                    : Colors.transparent,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.isActive ? widget.item.activeIcon : widget.item.icon,
+                      color: displayColor,
+                      size: 26,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.item.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: displayColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 4), // Reduced from 5 to save space
-            // ── Glow dot + sliding label (active only) ─────────────────────
-            AnimatedBuilder(
-              animation: _labelCtrl,
-              builder: (_, __) {
-                return Opacity(
-                  opacity: _labelOpacity.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _labelSlide.value),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Glow dot
-                        Container(
-                          width: 20, // Reduced from 22
-                          height: 3,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: widget.activeColor,
-                            boxShadow: [
-                              BoxShadow(
-                                color: widget.activeColor.withValues(
-                                  alpha: 0.6,
-                                ),
-                                blurRadius: 10,
-                                spreadRadius: 1,
-                              ),
-                              BoxShadow(
-                                color: widget.activeColor.withValues(
-                                  alpha: 0.3,
-                                ),
-                                blurRadius: 4,
-                                spreadRadius: 0,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 2), // Reduced from 3
-                        // Label — only for active, wrapped in FittedBox
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            widget.item.label,
-                            style: GoogleFonts.inter(
-                              fontSize: 9.5, // Reduced from 10.5
-                              fontWeight:
-                                  FontWeight.w800, // Extra Bold for Active
-                              color: widget.activeColor,
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                        ),
-                      ],
+              if (widget.isActive)
+                Positioned(
+                  bottom: -1,
+                  child: Container(
+                    width: 20,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: widget.activeColor,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );

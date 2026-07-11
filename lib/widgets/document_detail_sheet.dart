@@ -62,7 +62,7 @@ class DocumentDetailSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF2A322A),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -97,7 +97,7 @@ class DocumentDetailSheet extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF1E293B),
+              color: isDark ? Colors.white : const Color(0xFF2A322A),
             ),
           ),
           const SizedBox(height: 12),
@@ -258,7 +258,7 @@ class DocumentDetailSheet extends StatelessWidget {
       case 'En attente':
         return const Color(0xFFF59E0B);
       case 'En cours':
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF708C70);
       case 'Prêt':
         return const Color(0xFF10B981);
       case 'Rejeté':

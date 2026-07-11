@@ -155,7 +155,8 @@ class _ChatScreenState extends State<ChatScreen> {
     // Auto send audio
     final xfile = XFile(path);
     final bytes = await xfile.readAsBytes();
-    final audioName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final extension = kIsWeb ? 'webm' : 'm4a';
+    final audioName = 'audio_${DateTime.now().millisecondsSinceEpoch}.$extension';
     
     setState(() { _isSending = true; });
     final result = await _authService.sendMessage(
@@ -223,6 +224,41 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  String _formatDateHeader(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final msgDate = DateTime(date.year, date.month, date.day);
+      
+      if (msgDate == today) return "Aujourd'hui";
+      if (msgDate == yesterday) return "Hier";
+      
+      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    } catch (e) {
+      return '';
+    }
+  }
+
+  String _fixMediaUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) {
+      if (!kIsWeb) {
+        try {
+          final baseUri = Uri.parse(AuthService.baseUrl);
+          final originalUri = Uri.parse(url);
+          if (originalUri.host == '127.0.0.1' || originalUri.host == 'localhost') {
+            return originalUri.replace(host: baseUri.host, port: baseUri.port).toString();
+          }
+        } catch (_) {}
+      }
+      return url;
+    }
+    return AuthService.baseUrl.replaceAll('/api', '') + (url.startsWith('/') ? url : '/$url');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -236,9 +272,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               widget.receiverName,
               style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: isDark ? Colors.white : const Color(0xFF111827),
               ),
             ),
             const SizedBox(height: 2),
@@ -246,14 +282,14 @@ class _ChatScreenState extends State<ChatScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 6,
-                  height: 6,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: widget.isOnline ? const Color(0xFF10B981) : Colors.grey.shade400,
+                    color: widget.isOnline ? const Color(0xFF5AB64B) : Colors.grey.shade400,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Text(
                   widget.isOnline 
                       ? 'En ligne' 
@@ -262,8 +298,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           : 'En ligne ${widget.lastSeenDiff}'),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w500,
-                    fontSize: 11,
-                    color: widget.isOnline ? const Color(0xFF10B981) : Colors.grey.shade500,
+                    fontSize: 12,
+                    color: widget.isOnline ? const Color(0xFF5AB64B) : const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -279,8 +315,9 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.8),
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
               shape: BoxShape.circle,
+              border: isDark ? null : Border.all(color: Colors.grey.shade200),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, size: 18),
@@ -288,16 +325,26 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0, top: 8.0, bottom: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
+                shape: BoxShape.circle,
+                border: isDark ? null : Border.all(color: Colors.grey.shade200),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.more_vert, size: 20),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark 
-                ? [const Color(0xFF1E1E2C), const Color(0xFF2D2D44)]
-                : [const Color(0xFFE5E5F0), const Color(0xFFF1F1F8), const Color(0xFFE8E8F2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF8F9FA),
         ),
         child: SafeArea(
           child: Column(
@@ -313,7 +360,46 @@ class _ChatScreenState extends State<ChatScreen> {
                           final msg = _messages[index];
                           final isMe = msg['sender_type'] == 'student';
                           
-                          return _buildMessageBubble(msg, isMe, isDark);
+                          bool showDateHeader = false;
+                          String dateHeader = '';
+                          if (index == 0) {
+                            showDateHeader = true;
+                            dateHeader = _formatDateHeader(msg['created_at']);
+                          } else {
+                            final prevMsg = _messages[index - 1];
+                            final currentHeader = _formatDateHeader(msg['created_at']);
+                            final prevHeader = _formatDateHeader(prevMsg['created_at']);
+                            if (currentHeader != prevHeader && currentHeader.isNotEmpty) {
+                              showDateHeader = true;
+                              dateHeader = currentHeader;
+                            }
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (showDateHeader)
+                                Center(
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(vertical: 24),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.grey[800] : const Color(0xFFE5E7EB),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      dateHeader,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.grey[300] : const Color(0xFF4B5563),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              _buildMessageBubble(msg, isMe, isDark),
+                            ],
+                          );
                         },
                       ),
               ),
@@ -347,7 +433,7 @@ class _ChatScreenState extends State<ChatScreen> {
       radius: 14,
       backgroundColor: isMe 
           ? Colors.white.withOpacity(0.2) 
-          : (isDark ? const Color(0xFF334155) : Colors.white),
+          : (isDark ? const Color(0xFF334155) : const Color(0xFFEEF2FF)),
       child: Text(
         isMe ? 'M' : widget.receiverName.substring(0, 1).toUpperCase(),
         style: GoogleFonts.inter(
@@ -365,30 +451,36 @@ class _ChatScreenState extends State<ChatScreen> {
       decoration: BoxDecoration(
         gradient: isMe 
             ? const LinearGradient(
-                colors: [Color(0xFFA855F7), Color(0xFF6366F1)], 
+                colors: [Color(0xFF63D068), Color(0xFF4BAE4F)], 
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : null,
         color: isMe 
             ? null 
-            : (isDark ? const Color(0xFF1E293B).withOpacity(0.9) : Colors.white.withOpacity(0.9)),
+            : (isDark ? const Color(0xFF2A322A) : Colors.white),
         borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(20),
-          topRight: const Radius.circular(20),
-          bottomLeft: Radius.circular(isMe ? 20 : 4),
-          bottomRight: Radius.circular(isMe ? 4 : 20),
+          topLeft: const Radius.circular(24),
+          topRight: const Radius.circular(24),
+          bottomLeft: Radius.circular(isMe ? 24 : 6),
+          bottomRight: Radius.circular(isMe ? 6 : 24),
         ),
-        boxShadow: isMe ? null : [
+        boxShadow: isMe ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: const Color(0xFF4BAE4F).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ] : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
         ],
       ),
       constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.65,
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,7 +491,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text(
                 msg['sender_name'],
                 style: GoogleFonts.inter(
-                  color: const Color(0xFFA855F7),
+                  color: const Color(0xFF5AB64B),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -408,26 +500,48 @@ class _ChatScreenState extends State<ChatScreen> {
           if (attachmentUrl != null) 
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: attachmentUrl.toLowerCase().endsWith('.jpg') || 
-                       attachmentUrl.toLowerCase().endsWith('.jpeg') || 
-                       attachmentUrl.toLowerCase().endsWith('.png') 
-                    ? Image.network(attachmentUrl.startsWith('http') ? attachmentUrl : AuthService.baseUrl.replaceAll('/api', '') + attachmentUrl)
-                    : Row(
-                        children: [
-                          Icon(Icons.insert_drive_file, color: isMe ? Colors.white : Colors.blue),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text('Fichier joint', style: TextStyle(color: isMe ? Colors.white : Colors.black))),
-                        ],
-                      )
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: attachmentUrl.toLowerCase().endsWith('.jpg') || 
+                           attachmentUrl.toLowerCase().endsWith('.jpeg') || 
+                           attachmentUrl.toLowerCase().endsWith('.png') 
+                        ? Image.network(
+                            _fixMediaUrl(attachmentUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : Row(
+                            children: [
+                              Icon(Icons.insert_drive_file, color: isMe ? Colors.white : Colors.blue),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text('Fichier joint', style: TextStyle(color: isMe ? Colors.white : Colors.black))),
+                            ],
+                          )
+                  ),
+                  if (attachmentUrl.toLowerCase().endsWith('.jpg') || 
+                      attachmentUrl.toLowerCase().endsWith('.jpeg') || 
+                      attachmentUrl.toLowerCase().endsWith('.png'))
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.download_rounded, size: 18, color: Color(0xFF374151)),
+                      ),
+                    ),
+                ]
               ),
             ),
           if (audioUrl != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.only(bottom: 4.0),
               child: _AudioPlayerWidget(
-                url: audioUrl.startsWith('http') ? audioUrl : AuthService.baseUrl.replaceAll('/api', '') + audioUrl, 
+                url: _fixMediaUrl(audioUrl), 
                 isMe: isMe
               ),
             ),
@@ -437,12 +551,12 @@ class _ChatScreenState extends State<ChatScreen> {
               style: GoogleFonts.inter(
                 color: isMe 
                     ? Colors.white 
-                    : (isDark ? Colors.white : const Color(0xFF374151)),
+                    : (isDark ? Colors.white : const Color(0xFF111827)),
                 fontSize: 15,
                 height: 1.4,
               ),
             ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Align(
             alignment: Alignment.centerRight,
             child: Row(
@@ -453,7 +567,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   msg['formatted_time'] ?? '',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isMe ? Colors.white70 : (isDark ? Colors.white54 : Colors.black54),
+                    color: isMe ? Colors.white70 : (isDark ? Colors.white54 : const Color(0xFF9CA3AF)),
                   ),
                 ),
                 if (isMe) ...[
@@ -463,7 +577,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   else if (msg['tick_status'] == 'delivered')
                     const Icon(Icons.done_all, size: 14, color: Colors.white70)
                   else if (msg['tick_status'] == 'read')
-                    const Icon(Icons.done_all, size: 14, color: Colors.blue)
+                    const Icon(Icons.done_all, size: 14, color: Colors.white)
                 ]
               ],
             ),
@@ -496,71 +610,50 @@ class _ChatScreenState extends State<ChatScreen> {
     bool hasContent = _messageController.text.isNotEmpty || _attachmentBytes != null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.transparent,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF9FAFB),
+      ),
       child: Row(
         children: [
+          GestureDetector(
+             onTap: _pickAttachment,
+             child: Container(
+               width: 42,
+               height: 42,
+               decoration: BoxDecoration(
+                 color: const Color(0xFF6366F1).withOpacity(0.08),
+                 shape: BoxShape.circle,
+               ),
+               child: const Icon(Icons.add, color: Color(0xFF6366F1), size: 24),
+             ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Container(
-              height: 52,
+              height: 48,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B).withOpacity(0.8) : Colors.white.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.white),
+                color: isDark ? const Color(0xFF2A322A) : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
               ),
               child: _isRecording ? _buildRecordingView(isDark) : _buildNormalInput(isDark),
             ),
           ),
-          const SizedBox(width: 8),
-          if (_isRecording)
-            GestureDetector(
-              onTap: () => _stopRecording(cancel: false),
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFA855F7),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.send_rounded, color: Colors.white, size: 24),
-                ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _isRecording ? () => _stopRecording(cancel: false) : _sendMessage,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Color(0xFF5AB64B),
+                shape: BoxShape.circle,
               ),
-            )
-          else if (hasContent)
-            GestureDetector(
-              onTap: _sendMessage,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFA855F7),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.send_rounded, color: Colors.white, size: 24),
-                ),
-              ),
-            )
-          else
-            GestureDetector(
-              onTap: _startRecording,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B).withOpacity(0.8) : Colors.white.withOpacity(0.6),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.white),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.mic_none_rounded, 
-                    color: isDark ? Colors.white70 : Colors.black54, 
-                    size: 24
-                  ),
-                ),
+              child: const Center(
+                child: Icon(Icons.send_rounded, color: Colors.white, size: 22),
               ),
             ),
+          )
         ],
       ),
     );
@@ -569,11 +662,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildNormalInput(bool isDark) {
     return Row(
       children: [
-        const SizedBox(width: 4),
-        IconButton(
-          icon: Icon(Icons.attach_file_rounded, color: isDark ? Colors.white54 : Colors.black54, size: 22),
-          onPressed: _pickAttachment,
-        ),
+        const SizedBox(width: 16),
         Expanded(
           child: TextField(
             controller: _messageController,
@@ -583,7 +672,7 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: InputDecoration(
               hintText: 'Type your message...',
               hintStyle: GoogleFonts.inter(
-                color: isDark ? Colors.white54 : Colors.black54,
+                color: isDark ? Colors.white54 : const Color(0xFF9CA3AF),
                 fontSize: 14,
               ),
               border: InputBorder.none,
@@ -593,6 +682,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+        Icon(Icons.sentiment_satisfied_alt, color: isDark ? Colors.white54 : const Color(0xFF9CA3AF), size: 22),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: _startRecording,
+          child: Icon(Icons.mic_none_rounded, color: isDark ? Colors.white54 : const Color(0xFF6366F1), size: 22),
+        ),
+        const SizedBox(width: 16),
       ],
     );
   }
@@ -610,13 +706,43 @@ class _ChatScreenState extends State<ChatScreen> {
         const SizedBox(width: 8),
         Text('$minutes:$seconds', style: GoogleFonts.inter(color: Colors.red, fontWeight: FontWeight.w600)),
         const Spacer(),
-        TextButton.icon(
-          onPressed: () => _stopRecording(cancel: true),
-          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-          label: Text('Annuler', style: GoogleFonts.inter(color: Colors.redAccent)),
+        GestureDetector(
+          onTap: () => _stopRecording(cancel: true),
+          child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 16),
       ],
+    );
+  }
+}
+
+class _StaticWaveform extends StatelessWidget {
+  final bool isMe;
+  final double progress;
+  const _StaticWaveform({required this.isMe, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final heights = [10.0, 14.0, 22.0, 14.0, 18.0, 10.0, 6.0, 22.0, 18.0, 14.0, 26.0, 14.0, 10.0, 18.0, 10.0, 6.0, 14.0];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: List.generate(heights.length, (index) {
+        final barProgress = index / heights.length;
+        final isActive = barProgress <= progress;
+        final color = isMe 
+           ? (isActive ? Colors.white : Colors.white.withOpacity(0.4))
+           : (isActive ? const Color(0xFF5AB64B) : const Color(0xFF5AB64B).withOpacity(0.3));
+        return Container(
+          width: 3,
+          height: heights[index],
+          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
     );
   }
 }
@@ -641,7 +767,6 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
   void initState() {
     super.initState();
     
-    // Initialiser la source
     _audioPlayer.setSource(UrlSource(widget.url)).catchError((e) {
       debugPrint('Audio initialization error: $e');
     });
@@ -658,7 +783,6 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
       if (mounted) {
         setState(() { 
           _position = p; 
-          // Workaround for WebM duration bug on Web (often 0 or Infinity until fully loaded)
           if (_duration.inMilliseconds == 0 || p.inMilliseconds > _duration.inMilliseconds) {
              _duration = p;
           }
@@ -690,65 +814,68 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final progress = _duration.inMilliseconds > 0 
+         ? (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0) 
+         : 0.0;
+         
     return Container(
-      width: 220,
+      width: 240,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: Icon(
-              _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-              color: widget.isMe ? Colors.white : const Color(0xFF6366F1),
-              size: 36,
-            ),
-            onPressed: () async {
+          GestureDetector(
+            onTap: () async {
               if (_isPlaying) {
                 await _audioPlayer.pause();
               } else {
                 await _audioPlayer.play(UrlSource(widget.url));
               }
             },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: widget.isMe ? Colors.white : const Color(0xFF6366F1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isPlaying ? Icons.pause : Icons.play_arrow_rounded,
+                color: widget.isMe ? const Color(0xFF5AB64B) : Colors.white,
+                size: 26,
+              ),
+            ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 3,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                    activeTrackColor: widget.isMe ? Colors.white : const Color(0xFF6366F1),
-                    inactiveTrackColor: widget.isMe ? Colors.white38 : const Color(0xFF6366F1).withOpacity(0.3),
-                    thumbColor: widget.isMe ? Colors.white : const Color(0xFF6366F1),
-                  ),
-                  child: Slider(
-                    min: 0,
-                    max: _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1.0,
-                    value: _position.inMilliseconds > 0 && _duration.inMilliseconds > 0
-                        ? _position.inMilliseconds.toDouble().clamp(0.0, _duration.inMilliseconds.toDouble())
-                        : 0.0,
-                    onChanged: (val) {
-                      _audioPlayer.seek(Duration(milliseconds: val.toInt()));
-                    },
-                  ),
+                Row(
+                  children: [
+                    Expanded(child: _StaticWaveform(isMe: widget.isMe, progress: progress)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: widget.isMe ? Colors.white.withOpacity(0.2) : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '1x',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: widget.isMe ? Colors.white : const Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(_position),
-                        style: TextStyle(color: widget.isMe ? Colors.white70 : Colors.black54, fontSize: 11),
-                      ),
-                      Text(
-                        _formatDuration(_duration),
-                        style: TextStyle(color: widget.isMe ? Colors.white70 : Colors.black54, fontSize: 11),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDuration(_position.inMilliseconds > 0 ? _position : _duration),
+                  style: TextStyle(color: widget.isMe ? Colors.white70 : const Color(0xFF9CA3AF), fontSize: 11),
                 ),
               ],
             ),
@@ -758,3 +885,4 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
     );
   }
 }
+

@@ -175,7 +175,7 @@ class MyApp extends StatelessWidget {
             '/splash': (context) => const SplashScreen(),
             '/welcome': (context) => const WelcomePage(),
             '/login': (context) => const LoginPage(),
-            '/main': (context) => const MainScreen(),
+            '/main': (context) => MainScreen(),
           },
           debugShowCheckedModeBanner: false,
         );
