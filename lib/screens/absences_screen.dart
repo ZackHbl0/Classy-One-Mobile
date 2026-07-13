@@ -7,7 +7,6 @@ import '../providers/theme_provider.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/custom_sidebar.dart';
 
-
 class AppColors {
   static const Color primary = Color(0xFF2D3A2D);
   static const Color background = Color(0xFFE2E5E0);
@@ -29,6 +28,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   List<dynamic> _absences = [];
+  int? _expandedAbsenceIndex;
 
   @override
   void initState() {
@@ -53,7 +53,8 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
       });
     } else {
       setState(() {
-        _errorMessage = result['message'] ?? 'Erreur de chargement des absences';
+        _errorMessage =
+            result['message'] ?? 'Erreur de chargement des absences';
         _isLoading = false;
       });
     }
@@ -68,7 +69,11 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     }
   }
 
-  void _showJustifyBottomSheet(BuildContext context, int absenceId, bool isDark) {
+  void _showJustifyBottomSheet(
+    BuildContext context,
+    int absenceId,
+    bool isDark,
+  ) {
     final TextEditingController reasonController = TextEditingController();
     bool isSubmitting = false;
 
@@ -110,8 +115,11 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close, color: isDark ? Colors.white54 : Colors.grey[600]),
-                      )
+                        icon: Icon(
+                          Icons.close,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -136,14 +144,19 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                         color: isDark ? Colors.white38 : Colors.grey[400],
                       ),
                       filled: true,
-                      fillColor: isDark ? AppColors.darkBackground : AppColors.background,
+                      fillColor: isDark
+                          ? AppColors.darkBackground
+                          : AppColors.background,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -162,7 +175,8 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                                 isSubmitting = true;
                               });
 
-                              final result = await _authService.submitJustification(absenceId, reason);
+                              final result = await _authService
+                                  .submitJustification(absenceId, reason);
 
                               if (!mounted) return;
 
@@ -172,7 +186,10 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                                   SnackBar(
                                     content: Row(
                                       children: [
-                                        const Icon(Icons.check_circle, color: Colors.white),
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.white,
+                                        ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
@@ -184,7 +201,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                                     ),
                                     backgroundColor: Colors.green[600],
                                     behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                 );
                                 _fetchAbsences(); // Refresh the list
@@ -194,7 +213,10 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                                 });
                                 ScaffoldMessenger.of(this.context).showSnackBar(
                                   SnackBar(
-                                    content: Text(result['message'] ?? 'Erreur lors de l\'envoi'),
+                                    content: Text(
+                                      result['message'] ??
+                                          'Erreur lors de l\'envoi',
+                                    ),
                                     backgroundColor: Colors.red[600],
                                   ),
                                 );
@@ -287,11 +309,17 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: Text(
                 'Réessayer',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
@@ -343,46 +371,83 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
       color: AppColors.primary,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-        itemCount: _absences.length + 1,
+        itemCount: _absences.length,
         itemBuilder: (context, index) {
-          if (index == _absences.length) {
-            return _buildAssiduiteCard(isDark);
-          }
           final absence = _absences[index];
-          return _buildFullAbsenceItem(absence, isDark);
+          final isExpanded = _expandedAbsenceIndex == index;
+          return _buildFullAbsenceItem(absence, isDark, isExpanded, () {
+            setState(() {
+              _expandedAbsenceIndex = isExpanded ? null : index;
+            });
+          });
         },
       ),
     );
   }
 
-  Widget _buildFullAbsenceItem(Map<String, dynamic> absence, bool isDark) {
+  Widget _buildFullAbsenceItem(
+    Map<String, dynamic> absence,
+    bool isDark,
+    bool isExpanded,
+    VoidCallback onTap,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 32.0),
+      padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeroAbsenceCard(absence, isDark),
-          const SizedBox(height: 16),
-          _buildDetailsSection(absence, isDark),
-          const SizedBox(height: 16),
-          _buildNotesSection(absence, isDark),
+          GestureDetector(
+            onTap: onTap,
+            child: _buildHeroAbsenceCard(absence, isDark, isExpanded),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity, height: 0),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _buildDetailsSection(absence, isDark),
+                const SizedBox(height: 16),
+                _buildNotesSection(absence, isDark),
+              ],
+            ),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+            firstCurve: Curves.fastOutSlowIn,
+            secondCurve: Curves.fastOutSlowIn,
+            sizeCurve: Curves.fastOutSlowIn,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeroAbsenceCard(Map<String, dynamic> absence, bool isDark) {
+  Widget _buildHeroAbsenceCard(
+    Map<String, dynamic> absence,
+    bool isDark,
+    bool isExpanded,
+  ) {
     final String status = absence['status'] ?? 'pending_justification';
     final String matiere = absence['matiere'] ?? 'Inconnue';
     final String seance = absence['seance'] ?? '--';
-    final String date = absence['date'] != null ? _formatDate(absence['date']) : '--';
+    final String date = absence['date'] != null
+        ? _formatDate(absence['date'])
+        : '--';
     final String professeur = absence['professeur'] ?? 'Inconnu';
 
     final bool isApproved = status == 'approved';
     final bool isSubmitted = status == 'submitted_by_student';
 
     final String initial = matiere.isNotEmpty ? matiere[0].toUpperCase() : 'M';
-    final String title = matiere.split(' ').map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1).toLowerCase()).join(' ');
+    final String title = matiere
+        .split(' ')
+        .map(
+          (w) =>
+              w.isEmpty ? w : w[0].toUpperCase() + w.substring(1).toLowerCase(),
+        )
+        .join(' ');
 
     Color cardBgColor;
     Color cardBorderColor;
@@ -392,22 +457,34 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     IconData badgeIcon;
 
     if (isApproved) {
-      cardBgColor = isDark ? Colors.green.withOpacity(0.08) : const Color(0xFFEDF8EE);
-      cardBorderColor = isDark ? Colors.green.withOpacity(0.2) : Colors.green.withOpacity(0.3);
+      cardBgColor = isDark
+          ? Colors.green.withOpacity(0.08)
+          : const Color(0xFFEDF8EE);
+      cardBorderColor = isDark
+          ? Colors.green.withOpacity(0.2)
+          : Colors.green.withOpacity(0.3);
       badgeBgColor = Colors.green.withOpacity(0.2);
       badgeTextColor = isDark ? Colors.green[400]! : Colors.green[700]!;
       badgeText = 'Justifiée';
       badgeIcon = Icons.check_circle;
     } else if (isSubmitted) {
-      cardBgColor = isDark ? Colors.orange.withOpacity(0.08) : const Color(0xFFFFF7ED);
-      cardBorderColor = isDark ? Colors.orange.withOpacity(0.2) : Colors.orange.withOpacity(0.3);
+      cardBgColor = isDark
+          ? Colors.orange.withOpacity(0.08)
+          : const Color(0xFFFFF7ED);
+      cardBorderColor = isDark
+          ? Colors.orange.withOpacity(0.2)
+          : Colors.orange.withOpacity(0.3);
       badgeBgColor = Colors.orange.withOpacity(0.2);
       badgeTextColor = isDark ? Colors.orange[400]! : Colors.orange[800]!;
       badgeText = 'En attente';
       badgeIcon = Icons.access_time_filled;
     } else {
-      cardBgColor = isDark ? Colors.red.withOpacity(0.08) : const Color(0xFFFEF2F2);
-      cardBorderColor = isDark ? Colors.red.withOpacity(0.2) : Colors.red.withOpacity(0.3);
+      cardBgColor = isDark
+          ? Colors.red.withOpacity(0.08)
+          : const Color(0xFFFEF2F2);
+      cardBorderColor = isDark
+          ? Colors.red.withOpacity(0.2)
+          : Colors.red.withOpacity(0.3);
       badgeBgColor = Colors.red.withOpacity(0.2);
       badgeTextColor = isDark ? Colors.red[400]! : Colors.red[700]!;
       badgeText = 'Non Justifiée';
@@ -441,7 +518,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                 child: Icon(
                   Icons.description,
                   size: 180,
-                  color: isDark ? Colors.white.withOpacity(0.03) : badgeTextColor.withOpacity(0.05),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.03)
+                      : badgeTextColor.withOpacity(0.05),
                 ),
               ),
             ),
@@ -458,7 +537,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05),
+                          color: isDark
+                              ? Colors.black26
+                              : Colors.black.withOpacity(0.05),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -467,7 +548,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -479,14 +562,19 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
                             height: 1.2,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: badgeBgColor,
                           borderRadius: BorderRadius.circular(20),
@@ -510,18 +598,48 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 66.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeroInfoRow(Icons.calendar_today_rounded, date, isDark),
-                        const SizedBox(height: 12),
-                        _buildHeroInfoRow(Icons.access_time_rounded, seance, isDark),
-                        const SizedBox(height: 12),
-                        _buildHeroInfoRow(Icons.person_outline_rounded, professeur, isDark),
-                      ],
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 66.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildHeroInfoRow(
+                                Icons.calendar_today_rounded,
+                                date,
+                                isDark,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildHeroInfoRow(
+                                Icons.access_time_rounded,
+                                seance,
+                                isDark,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildHeroInfoRow(
+                                Icons.person_outline_rounded,
+                                professeur,
+                                isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      AnimatedRotation(
+                        turns: isExpanded ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: isDark
+                              ? Colors.white54
+                              : AppColors.textSecondary,
+                          size: 28,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -538,7 +656,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.5),
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.white.withOpacity(0.5),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -563,7 +683,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
   Widget _buildDetailsSection(Map<String, dynamic> absence, bool isDark) {
     final String status = absence['status'] ?? 'pending_justification';
     final String seance = absence['seance'] ?? '--';
-    final String date = absence['date'] != null ? _formatDate(absence['date']) : '--';
+    final String date = absence['date'] != null
+        ? _formatDate(absence['date'])
+        : '--';
 
     final bool isApproved = status == 'approved';
     final bool isSubmitted = status == 'submitted_by_student';
@@ -606,9 +728,27 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailItem(Icons.verified_user_outlined, 'Type', 'Cours', isDark, null),
-              _buildDetailItem(Icons.local_offer_outlined, 'Statut', statusText, isDark, statusColor),
-              _buildDetailItem(Icons.calendar_month_outlined, 'Date', date, isDark, null),
+              _buildDetailItem(
+                Icons.verified_user_outlined,
+                'Type',
+                'Cours',
+                isDark,
+                null,
+              ),
+              _buildDetailItem(
+                Icons.local_offer_outlined,
+                'Statut',
+                statusText,
+                isDark,
+                statusColor,
+              ),
+              _buildDetailItem(
+                Icons.calendar_month_outlined,
+                'Date',
+                date,
+                isDark,
+                null,
+              ),
               _buildDetailItem(Icons.schedule, 'Heure', seance, isDark, null),
             ],
           ),
@@ -617,14 +757,22 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     );
   }
 
-  Widget _buildDetailItem(IconData icon, String label, String value, bool isDark, Color? valueColor) {
+  Widget _buildDetailItem(
+    IconData icon,
+    String label,
+    String value,
+    bool isDark,
+    Color? valueColor,
+  ) {
     return Expanded(
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF4),
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : const Color(0xFFF0FDF4),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -649,7 +797,8 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: valueColor ?? (isDark ? Colors.white : AppColors.textPrimary),
+              color:
+                  valueColor ?? (isDark ? Colors.white : AppColors.textPrimary),
             ),
           ),
         ],
@@ -715,7 +864,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF222822) : const Color(0xFFF9FAFB),
+                color: isDark
+                    ? const Color(0xFF222822)
+                    : const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -751,7 +902,11 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: () => _showJustifyBottomSheet(context, id, isDark),
-                icon: const Icon(Icons.edit_document, size: 20, color: Colors.white),
+                icon: const Icon(
+                  Icons.edit_document,
+                  size: 20,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Justifier cette absence',
                   style: GoogleFonts.inter(
@@ -811,20 +966,12 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                 Positioned(
                   top: 10,
                   right: 12,
-                  child: Icon(
-                    Icons.star,
-                    size: 10,
-                    color: Colors.yellow[700],
-                  ),
+                  child: Icon(Icons.star, size: 10, color: Colors.yellow[700]),
                 ),
                 Positioned(
                   bottom: 12,
                   left: 10,
-                  child: Icon(
-                    Icons.star,
-                    size: 8,
-                    color: Colors.yellow[700],
-                  ),
+                  child: Icon(Icons.star, size: 8, color: Colors.yellow[700]),
                 ),
               ],
             ),

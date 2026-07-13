@@ -1073,7 +1073,16 @@ class _DashboardPageState extends State<DashboardPage>
   // ═══════════════════════════════════════════════════════════════
 
   Widget _buildProgressionCard(bool isDark) {
-    const progress = 0.72;
+    // Si la moyenne générale est dans _stats ou via grades summary
+    double userProgress = 0.0;
+    if (_gradeSummary != null && _gradeSummary!.moyenneGenerale > 0) {
+      // Convertir la moyenne (ex: 14.4 / 20) en pourcentage (ex: 72.0)
+      userProgress = _gradeSummary!.moyenneGenerale / 20.0;
+    }
+    
+    // Fallback à 0% si on a pas de données
+    final double progress = userProgress > 0 ? userProgress : 0.0;
+    final int progressPercent = (progress * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1115,9 +1124,9 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      '72%',
-                      style: TextStyle(
+                    Text(
+                      '$progressPercent%',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 44,
                         fontWeight: FontWeight.w900,
@@ -1127,7 +1136,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Bravo ! Vous êtes sur la bonne voie.',
+                      progressPercent >= 50 ? 'Bravo ! Vous êtes sur la bonne voie.' : 'Courage, redoublez d\'efforts !',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.55),
                         fontSize: 12,
@@ -1152,9 +1161,9 @@ class _DashboardPageState extends State<DashboardPage>
                         strokeWidth: 7,
                       ),
                     ),
-                    const Text(
-                      '72%',
-                      style: TextStyle(
+                    Text(
+                      '$progressPercent%',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w800,

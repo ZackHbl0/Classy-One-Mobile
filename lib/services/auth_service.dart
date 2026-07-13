@@ -579,6 +579,20 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> deleteMessage(int messageId) async {
+    final url = Uri.parse('$baseUrl/chat/messages/$messageId');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(url, headers: headers);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'message': 'Error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
   // ─── Absences Methods ──────────────────────────────────────────
 
   Future<Map<String, dynamic>> getAbsences() async {

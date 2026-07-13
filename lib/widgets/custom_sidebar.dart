@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../screens/profile_page.dart';
 import '../screens/grades_screen.dart';
@@ -56,10 +57,10 @@ class _CustomSidebarState extends State<CustomSidebar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E241E) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+    final bgColor = isDark ? const Color(0xFF1E241E) : const Color(0xFFF9FAFB);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
     final iconColor = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final primaryColor = Theme.of(context).primaryColor;
+    final primaryColor = const Color(0xFF10B981); // Emerald green
 
     return Drawer(
       backgroundColor: bgColor,
@@ -85,6 +86,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
                         'assets/images/classyone_icon.png',
                         width: 32,
                         height: 32,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(Icons.school, color: primaryColor, size: 32),
                       ),
                       const SizedBox(width: 12),
                       Text.rich(
@@ -92,7 +95,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                           children: [
                             TextSpan(
                               text: 'Classy',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -100,7 +103,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                             ),
                             TextSpan(
                               text: 'One',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: primaryColor,
@@ -116,8 +119,16 @@ class _CustomSidebarState extends State<CustomSidebar> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white12 : const Color(0xFFF1F5F9),
+                        color: isDark ? Colors.white12 : Colors.white,
                         shape: BoxShape.circle,
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                ),
+                              ],
                       ),
                       child: Icon(Icons.close, color: iconColor, size: 20),
                     ),
@@ -129,7 +140,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
 
             // ── User Info Card ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -153,9 +164,10 @@ class _CustomSidebarState extends State<CustomSidebar> {
                           height: 56,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: primaryColor.withOpacity(0.5),
+                            color: primaryColor.withOpacity(0.15),
                           ),
-                          child: const Icon(Icons.person, color: Colors.white, size: 32),
+                          // Placeholder user image using an icon since we don't have the user image asset
+                          child: Icon(Icons.person, color: primaryColor, size: 32),
                         ),
                         Positioned(
                           bottom: 0,
@@ -182,21 +194,37 @@ class _CustomSidebarState extends State<CustomSidebar> {
                         children: [
                           Text(
                             'Hello,',
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
                               color: isDark ? Colors.white54 : const Color(0xFF64748B),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             _userName,
-                            style: TextStyle(
-                              fontSize: 16,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: textColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Étudiant',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -215,7 +243,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                 children: [
                   Text(
                     'Thème',
-                    style: TextStyle(fontSize: 14, color: iconColor, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.poppins(fontSize: 13, color: iconColor, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
                   Consumer<ThemeProvider>(
@@ -223,8 +251,16 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       return Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF8FAFC),
+                          color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
                           borderRadius: BorderRadius.circular(24),
+                          boxShadow: !isDark
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 10,
+                                  ),
+                                ]
+                              : [],
                         ),
                         child: Row(
                           children: [
@@ -241,12 +277,15 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     boxShadow: !themeProvider.isDarkMode
                                         ? [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(0.05),
-                                              blurRadius: 4,
+                                              color: primaryColor.withOpacity(0.15),
+                                              blurRadius: 8,
                                               offset: const Offset(0, 2),
                                             )
                                           ]
                                         : [],
+                                    border: !themeProvider.isDarkMode
+                                        ? Border.all(color: primaryColor.withOpacity(0.3))
+                                        : null,
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -255,8 +294,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                       const SizedBox(width: 8),
                                       Text(
                                         'Light',
-                                        style: TextStyle(
-                                          fontSize: 14,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
                                           fontWeight: !themeProvider.isDarkMode ? FontWeight.w600 : FontWeight.w500,
                                           color: !themeProvider.isDarkMode ? primaryColor : iconColor,
                                         ),
@@ -280,7 +319,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                         ? [
                                             BoxShadow(
                                               color: Colors.black.withOpacity(0.2),
-                                              blurRadius: 4,
+                                              blurRadius: 8,
                                               offset: const Offset(0, 2),
                                             )
                                           ]
@@ -293,8 +332,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                       const SizedBox(width: 8),
                                       Text(
                                         'Dark',
-                                        style: TextStyle(
-                                          fontSize: 14,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
                                           fontWeight: themeProvider.isDarkMode ? FontWeight.w600 : FontWeight.w500,
                                           color: themeProvider.isDarkMode ? Colors.white : iconColor,
                                         ),
@@ -317,102 +356,207 @@ class _CustomSidebarState extends State<CustomSidebar> {
             // ── Menu Items ──
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 physics: const BouncingScrollPhysics(),
                 children: [
-                  _MenuItem(
-                    icon: Icons.home_outlined,
-                    label: 'Home',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/home' || widget.currentRoute == null,
-                    onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      if (widget.currentRoute != '/home' && widget.currentRoute != null) {
-                         Navigator.popUntil(context, (route) => route.isFirst);
-                      }
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.bar_chart_rounded,
-                    label: 'Mes Notes',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/grades',
-                    onTap: () => _navigateTo(context, const GradesScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.event_busy_outlined,
-                    label: 'Mes Absences',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/absences',
-                    onTap: () => _navigateTo(context, const AbsencesScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.chat_bubble_outline,
-                    label: 'Messagerie',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/messagerie',
-                    onTap: () => _navigateTo(context, const RecentChatsScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.description_outlined,
-                    label: 'Documents',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/documents',
-                    onTap: () => _navigateTo(context, const DocumentsPage()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.event_outlined,
-                    label: 'Événements',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/evenements',
-                    onTap: () => _navigateTo(context, const EvenementsPage()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.settings_outlined,
-                    label: 'Paramètres',
-                    textColor: textColor,
-                    iconColor: iconColor,
-                    isActive: widget.currentRoute == '/settings',
-                    onTap: () => _navigateTo(context, const SettingsPage()),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Footer (Logout) ──
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: InkWell(
-                onTap: () => _logout(context),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Déconnexion',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.redAccent,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: !isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          : [],
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      children: [
+                        _MenuItem(
+                          icon: Icons.home_outlined,
+                          label: 'Home',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/home' || widget.currentRoute == null,
+                          onTap: () {
+                            Navigator.pop(context); // Close drawer
+                            if (widget.currentRoute != '/home' && widget.currentRoute != null) {
+                               Navigator.popUntil(context, (route) => route.isFirst);
+                            }
+                          },
                         ),
-                      ),
-                    ],
+                        _MenuItem(
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Mes Notes',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/grades',
+                          onTap: () => _navigateTo(context, const GradesScreen()),
+                        ),
+                        _MenuItem(
+                          icon: Icons.event_busy_outlined,
+                          label: 'Mes Absences',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/absences',
+                          onTap: () => _navigateTo(context, const AbsencesScreen()),
+                        ),
+                        _MenuItem(
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Messagerie',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/messagerie',
+                          onTap: () => _navigateTo(context, const RecentChatsScreen()),
+                        ),
+                        _MenuItem(
+                          icon: Icons.description_outlined,
+                          label: 'Documents',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/documents',
+                          onTap: () => _navigateTo(context, const DocumentsPage()),
+                        ),
+                        _MenuItem(
+                          icon: Icons.event_outlined,
+                          label: 'Événements',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/evenements',
+                          onTap: () => _navigateTo(context, const EvenementsPage()),
+                        ),
+                        _MenuItem(
+                          icon: Icons.settings_outlined,
+                          label: 'Paramètres',
+                          textColor: textColor,
+                          iconColor: iconColor,
+                          isActive: widget.currentRoute == '/settings',
+                          onTap: () => _navigateTo(context, const SettingsPage()),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Logout ──
+                  InkWell(
+                    onTap: () => _logout(context),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF3F2A2A) : const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(isDark ? 0.1 : 0.8),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'Déconnexion',
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Version Footer ──
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: !isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.nightlight_round, color: primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Vous utilisez',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                                ),
+                              ),
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'ClassyOne ',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: 'v2.0.0',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white12 : const Color(0xFFF9FAFB),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.keyboard_arrow_up_rounded, color: iconColor, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ],
@@ -429,6 +573,7 @@ class _MenuItem extends StatelessWidget {
   final Color iconColor;
   final VoidCallback onTap;
   final bool isActive;
+  final int? badgeCount;
 
   const _MenuItem({
     required this.icon,
@@ -437,57 +582,70 @@ class _MenuItem extends StatelessWidget {
     required this.iconColor,
     required this.onTap,
     this.isActive = false,
+    this.badgeCount,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
+    final primaryColor = const Color(0xFF10B981); // Emerald Green
     final displayTextColor = isActive ? primaryColor : textColor;
-    final displayIconColor = isActive ? primaryColor : iconColor;
+    final displayIconColor = isActive ? Colors.white : iconColor;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
           color: isActive 
-             ? (isDark ? primaryColor.withOpacity(0.15) : primaryColor.withOpacity(0.08))
+             ? (isDark ? primaryColor.withOpacity(0.05) : primaryColor.withOpacity(0.05))
              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          border: isActive
+              ? Border(
+                  left: BorderSide(color: primaryColor, width: 3),
+                )
+              : const Border(left: BorderSide(color: Colors.transparent, width: 3)),
         ),
         child: Row(
           children: [
-            // Left active bar
             Container(
-              width: 3,
-              height: 24,
-              margin: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isActive ? primaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(icon, size: 20, color: displayIconColor),
             ),
-            const SizedBox(width: 16),
-            Icon(icon, size: 22, color: displayIconColor),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 15,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                   color: displayTextColor,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (!isActive)
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Icon(Icons.chevron_right, size: 18, color: iconColor.withOpacity(0.5)),
+            if (badgeCount != null && badgeCount! > 0)
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badgeCount.toString(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
               ),
+            Icon(Icons.chevron_right, size: 16, color: isActive ? primaryColor : iconColor.withOpacity(0.5)),
           ],
         ),
       ),

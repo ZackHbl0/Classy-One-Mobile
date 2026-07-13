@@ -16,7 +16,7 @@ class EventModel {
     required this.id,
     required this.title,
     required this.description,
-    this.dateEvent,
+    this.dateEvent,  
     required this.location,
     this.imageUrl,
     required this.category,

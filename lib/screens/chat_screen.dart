@@ -224,6 +224,49 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _deleteMessage(int messageId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le message'),
+        content: const Text('Voulez-vous vraiment supprimer ce message ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final response = await _authService.deleteMessage(messageId);
+      if (response['success'] == true) {
+        setState(() {
+          _messages.removeWhere((m) => m['id'] == messageId);
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur lors de la suppression.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur réseau.')),
+        );
+      }
+    }
+  }
+
   String _formatDateHeader(String? dateStr) {
     if (dateStr == null) return '';
     try {
@@ -325,22 +368,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 8.0, bottom: 8.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
-                shape: BoxShape.circle,
-                border: isDark ? null : Border.all(color: Colors.grey.shade200),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.more_vert, size: 20),
-                onPressed: () {},
-              ),
-            ),
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -596,7 +623,14 @@ class _ChatScreenState extends State<ChatScreen> {
             avatar,
             const SizedBox(width: 8),
           ],
-          bubble,
+          GestureDetector(
+            onLongPress: isMe ? () {
+              if (msg['id'] != null) {
+                _deleteMessage(msg['id']);
+              }
+            } : null,
+            child: bubble,
+          ),
           if (isMe) ...[
             const SizedBox(width: 8),
             avatar,
@@ -636,12 +670,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade200),
               ),
-              child: _isRecording ? _buildRecordingView(isDark) : _buildNormalInput(isDark),
+              child: _buildNormalInput(isDark),
             ),
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: _isRecording ? () => _stopRecording(cancel: false) : _sendMessage,
+            onTap: _sendMessage,
             child: Container(
               width: 48,
               height: 48,
@@ -683,11 +717,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         Icon(Icons.sentiment_satisfied_alt, color: isDark ? Colors.white54 : const Color(0xFF9CA3AF), size: 22),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: _startRecording,
-          child: Icon(Icons.mic_none_rounded, color: isDark ? Colors.white54 : const Color(0xFF6366F1), size: 22),
-        ),
         const SizedBox(width: 16),
       ],
     );
@@ -763,14 +792,12 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
+  bool _hasError = false;
+
   @override
   void initState() {
     super.initState();
-    
-    _audioPlayer.setSource(UrlSource(widget.url)).catchError((e) {
-      debugPrint('Audio initialization error: $e');
-    });
-
+    // Do NOT preload audio — only load when user presses play
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) setState(() { _isPlaying = state == PlayerState.playing; });
     });
@@ -825,22 +852,34 @@ class _AudioPlayerWidgetState extends State<_AudioPlayerWidget> {
         children: [
           GestureDetector(
             onTap: () async {
-              if (_isPlaying) {
-                await _audioPlayer.pause();
-              } else {
-                await _audioPlayer.play(UrlSource(widget.url));
+              if (_hasError) return;
+              try {
+                if (_isPlaying) {
+                  await _audioPlayer.pause();
+                } else {
+                  await _audioPlayer.play(UrlSource(widget.url));
+                }
+              } catch (e) {
+                debugPrint('AudioPlayer play error: $e');
+                if (mounted) setState(() => _hasError = true);
               }
             },
             child: Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: widget.isMe ? Colors.white : const Color(0xFF6366F1),
+                color: _hasError
+                    ? Colors.grey.shade400
+                    : (widget.isMe ? Colors.white : const Color(0xFF6366F1)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                _isPlaying ? Icons.pause : Icons.play_arrow_rounded,
-                color: widget.isMe ? const Color(0xFF5AB64B) : Colors.white,
+                _hasError
+                    ? Icons.error_outline_rounded
+                    : (_isPlaying ? Icons.pause : Icons.play_arrow_rounded),
+                color: _hasError
+                    ? Colors.white
+                    : (widget.isMe ? const Color(0xFF5AB64B) : Colors.white),
                 size: 26,
               ),
             ),

@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/screen_header.dart';
 
@@ -12,6 +12,7 @@ class AboutPage extends StatelessWidget {
   final String termsOfServiceUrl = "https://osbt.ma/terms";
   final String schoolWebsiteUrl = "https://osbt.ma";
   final String supportEmailUrl = "mailto:support@osbt.ma";
+  final String documentationUrl = "https://osbt.ma/docs";
 
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
@@ -24,12 +25,13 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF203B68);
+    const primary = Color(0xFF10B981);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E241E) : const Color(0xFFF6F7F2);
     final cardColor = isDark ? const Color(0xFF2A322A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF2A322A);
-    final subtitleColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
+    final subtitleColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final dividerColor = isDark ? Colors.white10 : const Color(0xFFE5E7EB);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -37,235 +39,368 @@ class AboutPage extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            // Header with matching top padding (32px)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 32, 20, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (Navigator.canPop(context))
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                      padding: EdgeInsets.zero,
-                      alignment: AlignmentDirectional.centerStart,
-                    ),
-                  const ScreenHeader(title: 'À propos'),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                child: Column(
-                  children: [
-                    // Glassmorphism App Logo
                     Container(
-                      width: 140,
-                      height: 140,
                       decoration: BoxDecoration(
+                        color: cardColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: primaryBlue.withOpacity(0.15),
-                            blurRadius: 30,
-                            offset: const Offset(0, 15),
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
                           ),
                         ],
                       ),
-                      child: ClipOval(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.arrow_back, color: textColor),
+                        tooltip: 'Retour',
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                  Text(
+                    "À propos",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: Icon(Icons.notifications_none_rounded, color: textColor),
+                        ),
+                        Positioned(
+                          right: 12,
+                          top: 12,
                           child: Container(
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white10 : Colors.white.withOpacity(0.6),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.school_rounded,
-                                size: 70,
-                                color: isDark ? Colors.white : primaryBlue,
-                              ),
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-
-                    // Branding
-                    Text(
-                      'OSBT Notify',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                child: Column(
+                  children: [
+                    // ── App Hero Card ─────────────────────────────────────
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: primaryBlue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Version 1.0.0',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: primaryBlue,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-
-                    // Developers Cards
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Développé par',
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          textBaseline: TextBaseline.alphabetic,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDeveloperCard(
-                      name: 'Zakaria',
-                      role: 'Développeur Full-Stack',
-                      githubUrl: zakariaGithubUrl,
-                      icon: Icons.code_rounded,
-                      cardColor: cardColor,
-                      textColor: textColor,
-                      subtitleColor: subtitleColor,
-                      primaryBlue: primaryBlue,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDeveloperCard(
-                      name: 'Ahmed',
-                      role: 'Développeur Full-Stack',
-                      githubUrl: ahmedGithubUrl,
-                      icon: Icons.developer_mode_rounded,
-                      cardColor: cardColor,
-                      textColor: textColor,
-                      subtitleColor: subtitleColor,
-                      primaryBlue: primaryBlue,
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Useful Links Section
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Liens utiles',
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            blurRadius: 10,
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                         ],
-                        border: Border.all(color: Colors.grey.withOpacity(0.1)),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLinkItem(
-                            title: 'Site Web de l\'école',
-                            icon: Icons.language_rounded,
-                            onTap: () => _launchUrl(schoolWebsiteUrl),
-                            textColor: textColor,
-                            primaryBlue: primaryBlue,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Logo
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: primary.withOpacity(0.25), width: 1.5),
+                                ),
+                                child: Center(
+                                  child: Icon(Icons.school_rounded, color: primary, size: 36),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // Title + version + desc
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'OSBT Notify',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: primary.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        'Version 1.0.0',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'La plateforme officielle de l\'école pour\nune communication simple et efficace.',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: subtitleColor,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          Divider(height: 1, color: Colors.grey.withOpacity(0.1), indent: 20, endIndent: 20),
-                          _buildLinkItem(
-                            title: 'Support Technique',
-                            icon: Icons.mail_outline_rounded,
-                            onTap: () => _launchUrl(supportEmailUrl),
-                            textColor: textColor,
-                            primaryBlue: primaryBlue,
+                          const SizedBox(height: 16),
+                          Divider(color: dividerColor, height: 1),
+                          const SizedBox(height: 16),
+                          // Badges Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildBadge(Icons.check_circle_outline_rounded, 'Stable Release', primary),
+                              _buildBadge(Icons.security_rounded, 'Sécurisé', primary),
+                              _buildBadge(
+                                Icons.update_rounded,
+                                'Mis à jour\n14 Mai 2026',
+                                primary,
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 16),
 
-                    // Legal Buttons
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () => _launchUrl(privacyPolicyUrl),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: cardColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                    // ── Développé avec ❤️ par ────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        child: Text(
-                          'Politique de confidentialité',
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Développé avec ', primary, heart: true),
+                          const SizedBox(height: 16),
+                          _buildDeveloperRow(
+                            name: 'Zakaria',
+                            role: 'Développeur Full-Stack',
+                            initial: 'Z',
+                            avatarColor: const Color(0xFF6366F1),
+                            onTap: () => _launchUrl(zakariaGithubUrl),
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            primary: primary,
+                            dividerColor: dividerColor,
+                            showDivider: true,
                           ),
-                        ),
+                          _buildDeveloperRow(
+                            name: 'Ahmed',
+                            role: 'Développeur Full-Stack',
+                            initial: 'A',
+                            avatarColor: const Color(0xFFF59E0B),
+                            onTap: () => _launchUrl(ahmedGithubUrl),
+                            textColor: textColor,
+                            subtitleColor: subtitleColor,
+                            primary: primary,
+                            dividerColor: dividerColor,
+                            showDivider: false,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () => _launchUrl(termsOfServiceUrl),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: cardColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+
+                    const SizedBox(height: 16),
+
+                    // ── Two columns: Liens utiles + Informations ──────────
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Liens utiles
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionTitle('Liens utiles', primary),
+                                const SizedBox(height: 12),
+                                _buildSmallLink(Icons.language_rounded, 'Site Web de l\'école', primary, textColor, subtitleColor, () => _launchUrl(schoolWebsiteUrl)),
+                                const SizedBox(height: 10),
+                                _buildSmallLink(Icons.mail_outline_rounded, 'Support Technique', primary, textColor, subtitleColor, () => _launchUrl(supportEmailUrl)),
+                                const SizedBox(height: 10),
+                                _buildSmallLink(Icons.article_outlined, 'Documentation', primary, textColor, subtitleColor, () => _launchUrl(documentationUrl)),
+                              ],
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'Conditions d\'utilisation',
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        // Informations techniques
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionTitle('Informations', primary),
+                                const SizedBox(height: 12),
+                                _buildInfoRow(Icons.tag_rounded, 'Version', '1.0.0', textColor, subtitleColor, primary),
+                                _buildInfoRow(Icons.build_outlined, 'Build', '240701', textColor, subtitleColor, primary),
+                                _buildInfoRow(Icons.flutter_dash_rounded, 'Framework', 'Flutter 3.35', textColor, subtitleColor, primary),
+                                _buildInfoRow(Icons.dns_outlined, 'Backend', 'Laravel 12', textColor, subtitleColor, primary),
+                                _buildInfoRow(Icons.storage_rounded, 'Base de données', 'MySQL', textColor, subtitleColor, primary),
+                                _buildInfoRow(Icons.api_rounded, 'API', 'REST', textColor, subtitleColor, primary),
+                              ],
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Fonctionnalités ───────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Fonctionnalités', primary),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildFeatureIcon(Icons.calendar_today_rounded, 'Agenda', primary, textColor),
+                              _buildFeatureIcon(Icons.payments_outlined, 'Paiements', primary, textColor),
+                              _buildFeatureIcon(Icons.description_outlined, 'Documents', primary, textColor),
+                              _buildFeatureIcon(Icons.chat_bubble_outline_rounded, 'Messagerie', primary, textColor),
+                              _buildFeatureIcon(Icons.note_alt_outlined, 'Notes', primary, textColor),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
 
                     const SizedBox(height: 32),
-                    Text(
-                      '© 2026 OSBT. Tous droits réservés.',
-                      style: TextStyle(
-                        color: subtitleColor.withOpacity(0.6),
-                        fontSize: 12,
-                      ),
+
+                    // ── Footer ────────────────────────────────────────────
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 4, height: 4, decoration: BoxDecoration(color: primary, shape: BoxShape.circle)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '© 2026 OSBT Notify',
+                              style: GoogleFonts.poppins(fontSize: 12, color: subtitleColor, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(width: 4, height: 4, decoration: BoxDecoration(color: primary, shape: BoxShape.circle)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _launchUrl(privacyPolicyUrl),
+                              child: Text('Politique de confidentialité', style: GoogleFonts.poppins(fontSize: 11, color: subtitleColor)),
+                            ),
+                            Text(' • ', style: GoogleFonts.poppins(fontSize: 11, color: subtitleColor)),
+                            GestureDetector(
+                              onTap: () => _launchUrl(termsOfServiceUrl),
+                              child: Text('Conditions d\'utilisation', style: GoogleFonts.poppins(fontSize: 11, color: subtitleColor)),
+                            ),
+                            Text(' • ', style: GoogleFonts.poppins(fontSize: 11, color: subtitleColor)),
+                            Text('Licences Open Source', style: GoogleFonts.poppins(fontSize: 11, color: subtitleColor)),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -277,85 +412,135 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDeveloperCard({
+  Widget _buildSectionTitle(String title, Color primary, {bool heart = false}) {
+    return Row(
+      children: [
+        Container(width: 3, height: 16, decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF374151)),
+        ),
+        if (heart) ...[
+          const SizedBox(width: 4),
+          const Icon(Icons.favorite_rounded, color: Color(0xFFEF4444), size: 14),
+          Text(' par', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF374151))),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBadge(IconData icon, String label, Color primary) {
+    return Row(
+      children: [
+        Icon(icon, color: primary, size: 14),
+        const SizedBox(width: 4),
+        Text(label, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500, color: const Color(0xFF64748B))),
+      ],
+    );
+  }
+
+  Widget _buildDeveloperRow({
     required String name,
     required String role,
-    required String githubUrl,
-    required IconData icon,
-    required Color cardColor,
+    required String initial,
+    required Color avatarColor,
+    required VoidCallback onTap,
     required Color textColor,
     required Color subtitleColor,
-    required Color primaryBlue,
+    required Color primary,
+    required Color dividerColor,
+    required bool showDivider,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: avatarColor.withOpacity(0.15),
+                child: Text(
+                  initial,
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: avatarColor),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                    Text(role, style: GoogleFonts.poppins(fontSize: 12, color: subtitleColor)),
+                  ],
+                ),
+              ),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: primary.withOpacity(0.1), shape: BoxShape.circle),
+                child: Icon(Icons.chevron_right_rounded, color: primary, size: 18),
+              ),
+            ],
           ),
+        ),
+        if (showDivider) ...[
+          const SizedBox(height: 12),
+          Divider(color: dividerColor, height: 1),
+          const SizedBox(height: 12),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: primaryBlue.withOpacity(0.1),
-            shape: BoxShape.circle,
+      ],
+    );
+  }
+
+  Widget _buildSmallLink(IconData icon, String title, Color primary, Color textColor, Color subtitleColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(color: primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: primary, size: 15),
           ),
-          child: Icon(icon, color: primaryBlue, size: 24),
-        ),
-        title: Text(
-          name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-            fontSize: 16,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(title, style: GoogleFonts.poppins(fontSize: 11, color: textColor, fontWeight: FontWeight.w500)),
           ),
-        ),
-        subtitle: Text(
-          role,
-          style: TextStyle(
-            color: subtitleColor,
-            fontSize: 13,
-          ),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.open_in_new_rounded, size: 20),
-          color: primaryBlue,
-          onPressed: () => _launchUrl(githubUrl),
-          tooltip: 'Voir le profil GitHub',
-        ),
+          Icon(Icons.chevron_right_rounded, color: subtitleColor, size: 16),
+        ],
       ),
     );
   }
 
-  Widget _buildLinkItem({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-    required Color textColor,
-    required Color primaryBlue,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: primaryBlue, size: 22),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
+  Widget _buildInfoRow(IconData icon, String label, String value, Color textColor, Color subtitleColor, Color primary) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: primary, size: 13),
+          const SizedBox(width: 6),
+          Expanded(child: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: subtitleColor))),
+          Text(value, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: textColor)),
+        ],
       ),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    );
+  }
+
+  Widget _buildFeatureIcon(IconData icon, String label, Color primary, Color textColor) {
+    return Column(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(color: primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: primary, size: 22),
+        ),
+        const SizedBox(height: 6),
+        Text(label, style: GoogleFonts.poppins(fontSize: 10, color: textColor, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

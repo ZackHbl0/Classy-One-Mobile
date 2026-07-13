@@ -53,14 +53,21 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1E241E) : const Color(0xFFF9FAFB),
+      backgroundColor: isDark
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF9FAFB),
       drawer: const CustomSidebar(currentRoute: '/profile'),
       body: SafeArea(
         child: Column(
           children: [
             // Top bar (Hamburger, Mon Profil, Notification)
             const Padding(
-              padding: EdgeInsets.only(top: 32.0, left: 20.0, right: 20.0, bottom: 24.0),
+              padding: EdgeInsets.only(
+                top: 32.0,
+                left: 20.0,
+                right: 20.0,
+                bottom: 24.0,
+              ),
               child: ScreenHeader(title: 'Mon Profil', showBackButton: false),
             ),
             // Scrollable Content
@@ -114,16 +121,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: Stack(
                   children: [
-                    Positioned(top: 10, right: 20, child: _buildDotPattern(opacity: 0.15)),
                     Positioned(
-                      bottom: -20, left: -20, 
+                      top: 10,
+                      right: 20,
+                      child: _buildDotPattern(opacity: 0.15),
+                    ),
+                    Positioned(
+                      bottom: -20,
+                      left: -20,
                       child: Container(
-                        width: 120, height: 120, 
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle, 
-                          color: Colors.white.withOpacity(0.08)
-                        )
-                      )
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -149,7 +162,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.verified, color: Color(0xFF4BAE4F), size: 20),
+                    const Icon(
+                      Icons.verified,
+                      color: Color(0xFF4BAE4F),
+                      size: 20,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -157,14 +174,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF4BAE4F).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.school, color: Color(0xFF4BAE4F), size: 14),
+                          Icon(
+                            Icons.school,
+                            color: Color(0xFF4BAE4F),
+                            size: 14,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Étudiant',
@@ -262,20 +286,45 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
   Widget _buildStatsRow(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _buildStatCard(isDark, Icons.book, const Color(0xFF4BAE4F), '4', 'Cours'),
-          _buildStatCard(isDark, Icons.calendar_today, const Color(0xFFFFB74D), '1', 'Absences'),
-          _buildStatCard(isDark, Icons.payment, const Color(0xFF42A5F5), 'À jour', 'Paiement'),
+          _buildStatCard(
+            isDark,
+            Icons.book,
+            const Color(0xFF4BAE4F),
+            '4',
+            'Cours',
+          ),
+          _buildStatCard(
+            isDark,
+            Icons.calendar_today,
+            const Color(0xFFFFB74D),
+            '1',
+            'Absences',
+          ),
+          _buildStatCard(
+            isDark,
+            Icons.payment,
+            const Color(0xFF42A5F5),
+            'À jour',
+            'Paiement',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(bool isDark, IconData icon, Color iconColor, String value, String label) {
+  Widget _buildStatCard(
+    bool isDark,
+    IconData icon,
+    Color iconColor,
+    String value,
+    String label,
+  ) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -341,7 +390,10 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(Icons.person, color: isDark ? Colors.white54 : const Color(0xFF1B4D36)),
+                Icon(
+                  Icons.person,
+                  color: isDark ? Colors.white54 : const Color(0xFF1B4D36),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -355,13 +407,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const Text(
                   'Voir tout >',
-                  style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
           Divider(height: 1, color: isDark ? Colors.white12 : Colors.grey[100]),
-          _buildInfoTile(isDark, Icons.email_outlined, 'Email', '${_prenom.toLowerCase()}.${_nom.toLowerCase()}@school.ma'),
+          _buildInfoTile(
+            isDark,
+            Icons.email_outlined,
+            'Email',
+            '${_prenom.toLowerCase()}.${_nom.toLowerCase()}@school.ma',
+          ),
           _buildInfoTile(isDark, Icons.phone_outlined, 'Téléphone', _telephone),
           _buildInfoTile(
             isDark,
@@ -375,12 +436,22 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoTile(bool isDark, IconData icon, String title, String value, {bool showBorder = true}) {
+  Widget _buildInfoTile(
+    bool isDark,
+    IconData icon,
+    String title,
+    String value, {
+    bool showBorder = true,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         border: showBorder
-            ? Border(bottom: BorderSide(color: isDark ? Colors.white12 : Colors.grey[100]!))
+            ? Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.white12 : Colors.grey[100]!,
+                ),
+              )
             : null,
       ),
       child: Row(
@@ -436,7 +507,9 @@ class _ProfilePageState extends State<ProfilePage> {
             () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
               ).then((_) => _loadUserData());
             },
           ),
@@ -446,7 +519,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildActionCard(
-      bool isDark, IconData icon, Color color, String title, String subtitle, VoidCallback onTap) {
+    bool isDark,
+    IconData icon,
+    Color color,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -477,23 +556,15 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Colors.grey, size: 14),
-                    ],
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -504,6 +575,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.grey,
+              size: 14,
             ),
           ],
         ),
@@ -524,8 +600,15 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: Color(0xFF4BAE4F), shape: BoxShape.circle),
-            child: const Icon(Icons.shield_outlined, color: Colors.white, size: 22),
+            decoration: const BoxDecoration(
+              color: Color(0xFF4BAE4F),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -564,7 +647,12 @@ class _HeaderDomeClipper extends CustomClipper<Path> {
     var path = Path();
     path.lineTo(0, size.height);
     // Draw an upward dome from bottom-left to bottom-right
-    path.quadraticBezierTo(size.width / 2, size.height - 80, size.width, size.height);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height - 80,
+      size.width,
+      size.height,
+    );
     path.lineTo(size.width, 0);
     path.close();
     return path;

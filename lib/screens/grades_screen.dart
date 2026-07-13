@@ -99,7 +99,9 @@ class _GradesScreenState extends State<GradesScreen> {
             // Parse grades
             final gradesData = result['data'];
             if (gradesData != null && gradesData is List) {
-              _grades = gradesData.map((e) => Grade.fromJson(e as Map<String, dynamic>)).toList();
+              _grades = gradesData
+                  .map((e) => Grade.fromJson(e as Map<String, dynamic>))
+                  .toList();
               _processGrades();
             }
             _errorMessage = null;
@@ -137,14 +139,14 @@ class _GradesScreenState extends State<GradesScreen> {
           ),
           Expanded(
             child: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF708C70)),
-            )
-          : _errorMessage != null
-          ? _buildErrorState()
-          : _grades.isEmpty
-          ? _buildEmptyState()
-          : _buildGradesContent(isDark),
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF708C70)),
+                  )
+                : _errorMessage != null
+                ? _buildErrorState()
+                : _grades.isEmpty
+                ? _buildEmptyState()
+                : _buildGradesContent(isDark),
           ),
         ],
       ),
@@ -181,37 +183,25 @@ class _GradesScreenState extends State<GradesScreen> {
       onRefresh: _loadGrades,
       color: const Color(0xFF8B5CF6),
       child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         slivers: [
           // Hero card
           if (_summary != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: _buildHeroCard(isDark),
-              ),
-            ),
-          
-          // Summary Grid
-          if (_summary != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: _buildSummaryGrid(isDark),
               ),
             ),
 
           // Semesters List
           SliverList(
             delegate: SliverChildListDelegate(_buildSemesterSections(isDark)),
-          ),
-
-          // Conseil du jour
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
-              child: _buildTipCard(isDark),
-            ),
           ),
         ],
       ),
@@ -225,15 +215,13 @@ class _GradesScreenState extends State<GradesScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF8B5CF6), // Purple
-            Color(0xFF6D28D9), // Darker purple
-          ],
+          colors: [Color(0xFF1B3A2A), Color(0xFF2D5A3D), Color(0xFF3B6E4A)],
+          stops: [0.0, 0.55, 1.0],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withOpacity(0.4),
+            color: const Color(0xFF1B3A2A).withOpacity(0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -255,7 +243,10 @@ class _GradesScreenState extends State<GradesScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -332,9 +323,20 @@ class _GradesScreenState extends State<GradesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildHeroStatItem(Icons.menu_book, '${_summary!.coursesEvalues}', 'Évalués'),
-              _buildHeroStatItem(Icons.layers, '${_summary!.totalCourses}', 'Total'),
-              _buildHeroProgressItem('${((_summary!.coursesEvalues / (_summary!.totalCourses > 0 ? _summary!.totalCourses : 1)) * 100).toInt()}%', 'Progression'),
+              _buildHeroStatItem(
+                Icons.menu_book,
+                '${_summary!.coursesEvalues}',
+                'Évalués',
+              ),
+              _buildHeroStatItem(
+                Icons.layers,
+                '${_summary!.totalCourses}',
+                'Total',
+              ),
+              _buildHeroProgressItem(
+                '${((_summary!.coursesEvalues / (_summary!.totalCourses > 0 ? _summary!.totalCourses : 1)) * 100).toInt()}%',
+                'Progression',
+              ),
             ],
           ),
         ],
@@ -357,8 +359,18 @@ class _GradesScreenState extends State<GradesScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
           ],
         ),
       ],
@@ -375,7 +387,9 @@ class _GradesScreenState extends State<GradesScreen> {
             fit: StackFit.expand,
             children: [
               CircularProgressIndicator(
-                value: (_summary!.coursesEvalues / (_summary!.totalCourses > 0 ? _summary!.totalCourses : 1)),
+                value:
+                    (_summary!.coursesEvalues /
+                    (_summary!.totalCourses > 0 ? _summary!.totalCourses : 1)),
                 backgroundColor: Colors.white.withOpacity(0.15),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 strokeWidth: 4,
@@ -387,8 +401,18 @@ class _GradesScreenState extends State<GradesScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
           ],
         ),
       ],
@@ -402,17 +426,41 @@ class _GradesScreenState extends State<GradesScreen> {
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildSummaryCard(Icons.menu_book, '${_summary!.coursesEvalues}', 'Matières\névaluées', const Color(0xFF8B5CF6), isDark),
+          _buildSummaryCard(
+            Icons.menu_book,
+            '${_summary!.coursesEvalues}',
+            'Matières\névaluées',
+            const Color(0xFF8B5CF6),
+            isDark,
+          ),
           const SizedBox(width: 12),
-          _buildSummaryCard(Icons.show_chart, _summary!.moyenneGenerale.toStringAsFixed(2), 'Moyenne\ngénérale', const Color(0xFF10B981), isDark),
+          _buildSummaryCard(
+            Icons.show_chart,
+            _summary!.moyenneGenerale.toStringAsFixed(2),
+            'Moyenne\ngénérale',
+            const Color(0xFF10B981),
+            isDark,
+          ),
           const SizedBox(width: 12),
-          _buildSummaryCard(Icons.emoji_events, _summary!.status, 'Niveau\nactuel', const Color(0xFFF59E0B), isDark),
+          _buildSummaryCard(
+            Icons.emoji_events,
+            _summary!.status,
+            'Niveau\nactuel',
+            const Color(0xFFF59E0B),
+            isDark,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCard(IconData icon, String value, String label, Color color, bool isDark) {
+  Widget _buildSummaryCard(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+    bool isDark,
+  ) {
     return Container(
       width: 135,
       padding: const EdgeInsets.all(16),
@@ -444,9 +492,23 @@ class _GradesScreenState extends State<GradesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 11, height: 1.2)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
+                ),
               ],
             ),
           ),
@@ -468,7 +530,11 @@ class _GradesScreenState extends State<GradesScreen> {
               padding: const EdgeInsets.only(bottom: 16, top: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.bookmark, color: Color(0xFF8B5CF6), size: 20),
+                  const Icon(
+                    Icons.bookmark,
+                    color: Color(0xFF8B5CF6),
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     semester.toUpperCase(),
@@ -483,7 +549,11 @@ class _GradesScreenState extends State<GradesScreen> {
               ),
             ),
             ...courses.entries.map((courseEntry) {
-              return _buildExpandableCourseCard(courseEntry.key, courseEntry.value, isDark);
+              return _buildExpandableCourseCard(
+                courseEntry.key,
+                courseEntry.value,
+                isDark,
+              );
             }),
           ],
         ),
@@ -507,14 +577,24 @@ class _GradesScreenState extends State<GradesScreen> {
 
   IconData _getCourseIcon(String courseName) {
     final name = courseName.toLowerCase();
-    if (name.contains('uml') || name.contains('dev') || name.contains('react') || name.contains('prog')) return Icons.code;
-    if (name.contains('algo') || name.contains('struct') || name.contains('data')) return Icons.storage;
+    if (name.contains('uml') ||
+        name.contains('dev') ||
+        name.contains('react') ||
+        name.contains('prog'))
+      return Icons.code;
+    if (name.contains('algo') ||
+        name.contains('struct') ||
+        name.contains('data'))
+      return Icons.storage;
     if (name.contains('math') || name.contains('stat')) return Icons.calculate;
     if (name.contains('eco') || name.contains('mana')) return Icons.business;
     return Icons.book;
   }
 
-  Grade? _findGrade(Map<String, Grade> gradesByType, List<String> possibleKeys) {
+  Grade? _findGrade(
+    Map<String, Grade> gradesByType,
+    List<String> possibleKeys,
+  ) {
     for (var key in possibleKeys) {
       if (gradesByType.containsKey(key)) return gradesByType[key];
     }
@@ -526,8 +606,18 @@ class _GradesScreenState extends State<GradesScreen> {
     return null;
   }
 
-  Widget _buildExpandableCourseCard(String rawCourseName, Map<String, Grade> gradesByType, bool isDark) {
-    final courseName = rawCourseName.split(' ').map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1).toLowerCase()).join(' ');
+  Widget _buildExpandableCourseCard(
+    String rawCourseName,
+    Map<String, Grade> gradesByType,
+    bool isDark,
+  ) {
+    final courseName = rawCourseName
+        .split(' ')
+        .map(
+          (w) =>
+              w.isEmpty ? w : w[0].toUpperCase() + w.substring(1).toLowerCase(),
+        )
+        .join(' ');
     final courseAvg = _courseAverages[rawCourseName] ?? 0.0;
     final textColor = isDark ? Colors.white : const Color(0xFF111827);
     final bgColor = isDark ? const Color(0xFF2A322A) : Colors.white;
@@ -538,10 +628,18 @@ class _GradesScreenState extends State<GradesScreen> {
 
     final ctrl1 = _findGrade(gradesByType, ['Contrôle 1', 'Ctrl 1']);
     final ctrl2 = _findGrade(gradesByType, ['Contrôle 2', 'Ctrl 2']);
-    final tp = _findGrade(gradesByType, ['TP', 'Projet', 'TP/Projet', 'TP/Proj']);
+    final tp = _findGrade(gradesByType, [
+      'TP',
+      'Projet',
+      'TP/Projet',
+      'TP/Proj',
+    ]);
     final examen = _findGrade(gradesByType, ['Examen Final', 'Examen']);
 
-    final String profName = (gradesByType.values.isNotEmpty && gradesByType.values.first.professor != null && gradesByType.values.first.professor!.isNotEmpty)
+    final String profName =
+        (gradesByType.values.isNotEmpty &&
+            gradesByType.values.first.professor != null &&
+            gradesByType.values.first.professor!.isNotEmpty)
         ? gradesByType.values.first.professor!
         : 'Prof. Anonyme';
 
@@ -572,7 +670,11 @@ class _GradesScreenState extends State<GradesScreen> {
                   color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(_getCourseIcon(courseName), color: primaryColor, size: 28),
+                child: Icon(
+                  _getCourseIcon(courseName),
+                  color: primaryColor,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -581,7 +683,11 @@ class _GradesScreenState extends State<GradesScreen> {
                   children: [
                     Text(
                       courseName,
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -606,12 +712,20 @@ class _GradesScreenState extends State<GradesScreen> {
                   children: [
                     Text(
                       courseAvg > 0 ? courseAvg.toStringAsFixed(2) : '-',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: avgColor),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: avgColor,
+                      ),
                     ),
                     if (courseAvg > 0)
                       Text(
                         avgStatus,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: avgColor),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: avgColor,
+                        ),
                       ),
                   ],
                 ),
@@ -635,7 +749,12 @@ class _GradesScreenState extends State<GradesScreen> {
                   Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 56, right: 8, top: 16, bottom: 20),
+                        padding: const EdgeInsets.only(
+                          left: 56,
+                          right: 8,
+                          top: 16,
+                          bottom: 20,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -649,7 +768,10 @@ class _GradesScreenState extends State<GradesScreen> {
                       if (courseAvg > 0)
                         Container(
                           margin: const EdgeInsets.only(left: 48),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: avgColor.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(12),
@@ -661,17 +783,35 @@ class _GradesScreenState extends State<GradesScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Moyenne de la matière', style: TextStyle(color: Colors.grey[600], fontSize: 11, fontWeight: FontWeight.w600)),
+                                    Text(
+                                      'Moyenne de la matière',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
                                       textBaseline: TextBaseline.alphabetic,
                                       children: [
                                         Text(
                                           courseAvg.toStringAsFixed(2),
-                                          style: TextStyle(color: avgColor, fontSize: 18, fontWeight: FontWeight.bold),
+                                          style: TextStyle(
+                                            color: avgColor,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                        const Text(' / 20', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                        const Text(
+                                          ' / 20',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -679,15 +819,24 @@ class _GradesScreenState extends State<GradesScreen> {
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: avgColor.withOpacity(0.2)),
+                                  border: Border.all(
+                                    color: avgColor.withOpacity(0.2),
+                                  ),
                                 ),
                                 child: Text(
                                   avgStatus,
-                                  style: TextStyle(color: avgColor, fontSize: 12, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: avgColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -707,7 +856,11 @@ class _GradesScreenState extends State<GradesScreen> {
   Widget _buildEvaluationItem(String label, Grade? grade, bool isDark) {
     final val = grade != null ? grade.note : -1.0;
     final isFailing = val >= 0 && val < 10.0;
-    final color = val < 0 ? (isDark ? Colors.grey[700] : Colors.grey[300])! : (isFailing ? const Color(0xFFEF4444) : (isDark ? Colors.white : const Color(0xFF111827)));
+    final color = val < 0
+        ? (isDark ? Colors.grey[700] : Colors.grey[300])!
+        : (isFailing
+              ? const Color(0xFFEF4444)
+              : (isDark ? Colors.white : const Color(0xFF111827)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -749,7 +902,11 @@ class _GradesScreenState extends State<GradesScreen> {
               color: Color(0xFF8B5CF6),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lightbulb_outline, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.lightbulb_outline,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -758,12 +915,20 @@ class _GradesScreenState extends State<GradesScreen> {
               children: [
                 const Text(
                   'Conseil du jour',
-                  style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Color(0xFF8B5CF6),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Travaille régulièrement et révise les chapitres clés pour améliorer tes résultats.',
-                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 12, height: 1.4),
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black87,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),

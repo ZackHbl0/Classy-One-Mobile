@@ -24,11 +24,11 @@ class PremiumSwitch extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(100),
           color: value
-              ? const Color(0xFF2D3A2D) // Deep Navy
+              ? const Color(0xFF10B981) // Emerald Green
               : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
           border: Border.all(
             color: value 
-                ? const Color(0xFF708C70).withOpacity(0.2) 
+                ? const Color(0xFF10B981).withOpacity(0.2) 
                 : Colors.transparent,
             width: 1,
           ),
@@ -46,12 +46,12 @@ class PremiumSwitch extends StatelessWidget {
                   height: 18,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: value ? const Color(0xFF708C70) : Colors.white,
+                    color: Colors.white, // White thumb
                     boxShadow: value
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF708C70).withOpacity(0.8),
-                              blurRadius: 8,
+                              color: const Color(0xFF10B981).withOpacity(0.4),
+                              blurRadius: 6,
                               spreadRadius: 1,
                             ),
                           ]

@@ -45,8 +45,11 @@ class _CoursesScreenState extends State<CoursesScreen>
       _searchQuery = query.toLowerCase();
       _filteredCourses = _courses.where((course) {
         final title = (course['title'] ?? '').toString().toLowerCase();
-        final description = (course['description'] ?? '').toString().toLowerCase();
-        return title.contains(_searchQuery) || description.contains(_searchQuery);
+        final description = (course['description'] ?? '')
+            .toString()
+            .toLowerCase();
+        return title.contains(_searchQuery) ||
+            description.contains(_searchQuery);
       }).toList();
     });
   }
@@ -106,8 +109,18 @@ class _CoursesScreenState extends State<CoursesScreen>
     try {
       final date = DateTime.parse(isoString);
       final months = [
-        'Janv.', 'Févr.', 'Mars', 'Avril', 'Mai', 'Juin',
-        'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
+        'Janv.',
+        'Févr.',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juil.',
+        'Août',
+        'Sept.',
+        'Oct.',
+        'Nov.',
+        'Déc.',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
@@ -168,14 +181,20 @@ class _CoursesScreenState extends State<CoursesScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF1E241E) : const Color(0xFFF8F9FA),
+      backgroundColor: isDark
+          ? const Color(0xFF1E241E)
+          : const Color(0xFFF8F9FA),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
             const Padding(
-              padding: EdgeInsets.only(top: 32.0, left: 20.0, right: 20.0, bottom: 24.0),
+              padding: EdgeInsets.only(
+                top: 32.0,
+                left: 20.0,
+                right: 20.0,
+                bottom: 24.0,
+              ),
               child: ScreenHeader(title: 'Mes Cours'),
             ),
             // Subtitle
@@ -197,9 +216,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isDark
-                          ? Colors.white54
-                          : const Color(0xFF64748B),
+                      color: isDark ? Colors.white54 : const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -209,7 +226,9 @@ class _CoursesScreenState extends State<CoursesScreen>
             // Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0, vertical: 8.0),
+                horizontal: 20.0,
+                vertical: 8.0,
+              ),
               child: Container(
                 height: 50,
                 decoration: BoxDecoration(
@@ -224,9 +243,13 @@ class _CoursesScreenState extends State<CoursesScreen>
                   ],
                   border: isDark
                       ? Border.all(
-                          color: Colors.white.withOpacity(0.05), width: 1)
+                          color: Colors.white.withOpacity(0.05),
+                          width: 1,
+                        )
                       : Border.all(
-                          color: Colors.grey.withOpacity(0.1), width: 1),
+                          color: Colors.grey.withOpacity(0.1),
+                          width: 1,
+                        ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -280,14 +303,15 @@ class _CoursesScreenState extends State<CoursesScreen>
                   ? const Center(
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF708C70)),
+                          Color(0xFF708C70),
+                        ),
                       ),
                     )
                   : _errorMessage != null
-                      ? _buildErrorState()
-                      : _filteredCourses.isEmpty
-                          ? _buildEmptyState()
-                          : _buildCoursesList(isDark),
+                  ? _buildErrorState()
+                  : _filteredCourses.isEmpty
+                  ? _buildEmptyState()
+                  : _buildCoursesList(isDark),
             ),
           ],
         ),
@@ -326,8 +350,7 @@ class _CoursesScreenState extends State<CoursesScreen>
     );
   }
 
-  Widget _buildModernCourseCard(
-      dynamic course, int index, bool isDark) {
+  Widget _buildModernCourseCard(dynamic course, int index, bool isDark) {
     final title = course['title'] ?? 'Nouveau Cours';
     final branding = _getCourseBranding(title);
     final categoryColor = branding['color'] as Color;
@@ -351,8 +374,7 @@ class _CoursesScreenState extends State<CoursesScreen>
           ),
         ],
         border: isDark
-            ? Border.all(
-                color: Colors.white.withOpacity(0.05), width: 1)
+            ? Border.all(color: Colors.white.withOpacity(0.05), width: 1)
             : null,
       ),
       child: Material(
@@ -395,16 +417,20 @@ class _CoursesScreenState extends State<CoursesScreen>
                           Positioned(
                             top: -10,
                             right: -10,
-                            child: Icon(Icons.circle,
-                                color: categoryColor.withOpacity(0.1),
-                                size: 40),
+                            child: Icon(
+                              Icons.circle,
+                              color: categoryColor.withOpacity(0.1),
+                              size: 40,
+                            ),
                           ),
                           Positioned(
                             bottom: 10,
                             left: 10,
-                            child: Icon(Icons.star,
-                                color: categoryColor.withOpacity(0.15),
-                                size: 16),
+                            child: Icon(
+                              Icons.star,
+                              color: categoryColor.withOpacity(0.15),
+                              size: 16,
+                            ),
                           ),
                           Container(
                             width: 60,
@@ -424,19 +450,25 @@ class _CoursesScreenState extends State<CoursesScreen>
                             ),
                             alignment: Alignment.center,
                             child: branding['iconText'] == 'React'
-                                ? Icon(Icons.science,
-                                    color: categoryColor, size: 30)
+                                ? Icon(
+                                    Icons.science,
+                                    color: categoryColor,
+                                    size: 30,
+                                  )
                                 : branding['iconText'] == 'Java'
-                                    ? Icon(Icons.local_cafe,
-                                        color: categoryColor, size: 28)
-                                    : Text(
-                                        branding['iconText'],
-                                        style: TextStyle(
-                                          color: categoryColor,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                ? Icon(
+                                    Icons.local_cafe,
+                                    color: categoryColor,
+                                    size: 28,
+                                  )
+                                : Text(
+                                    branding['iconText'],
+                                    style: TextStyle(
+                                      color: categoryColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -451,7 +483,9 @@ class _CoursesScreenState extends State<CoursesScreen>
                           // Category Pill
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: categoryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -524,9 +558,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                           Text(
                             'Professeur',
                             style: TextStyle(
-                              color: isDark
-                                  ? Colors.white38
-                                  : Colors.grey[500],
+                              color: isDark ? Colors.white38 : Colors.grey[500],
                               fontSize: 10,
                             ),
                           ),
@@ -547,8 +579,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                     ),
 
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Container(
                         width: 1,
                         height: 24,
@@ -558,8 +589,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                       ),
                     ),
 
-                    _buildMetaIcon(
-                        Icons.calendar_today_outlined, isDark),
+                    _buildMetaIcon(Icons.calendar_today_outlined, isDark),
                     const SizedBox(width: 6),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,9 +597,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                         Text(
                           'Publié le',
                           style: TextStyle(
-                            color: isDark
-                                ? Colors.white38
-                                : Colors.grey[500],
+                            color: isDark ? Colors.white38 : Colors.grey[500],
                             fontSize: 10,
                           ),
                         ),
@@ -599,8 +627,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                         shape: BoxShape.circle,
                         border: isDark
                             ? null
-                            : Border.all(
-                                color: Colors.grey.withOpacity(0.2)),
+                            : Border.all(color: Colors.grey.withOpacity(0.2)),
                         boxShadow: [
                           if (!isDark)
                             BoxShadow(
@@ -711,8 +738,7 @@ class _CoursesScreenState extends State<CoursesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 64, color: Colors.redAccent),
+            const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
             const SizedBox(height: 20),
             Text(
               _errorMessage ?? 'Une erreur est survenue',

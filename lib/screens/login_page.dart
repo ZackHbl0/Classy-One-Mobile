@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
             'Mot de passe oublié ?',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1F3D),
+              color: Color(0xFF19553D),
             ),
           ),
           content: const Text(
@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
               child: const Text(
                 'Fermer',
                 style: TextStyle(
-                  color: Color(0xFF1A1F3D),
+                  color: Color(0xFF19553D),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A1F3D),
+                backgroundColor: const Color(0xFF19553D),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -174,457 +174,525 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const primarySage = Color(0xFF4A6741); // Deep Sage Green
-    const lightBg = Color(0xFFE2E5E0);   // Soft sage-grey background
+    const primaryGreen = Color(0xFF19553D); // Dark green matching the image
+    const accentGreen = Color(0xFF298A5E);
+    const bgGreenLight = Color(0xFFF1F8F5);
 
     return Scaffold(
-      backgroundColor: lightBg,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFE2E5E0), Color(0xFFF6F7F2), Color(0xFFE2E5E0)],
+      backgroundColor: bgGreenLight,
+      body: Stack(
+        children: [
+          // Background Decor: Dotted pattern
+          Positioned(
+            top: 40,
+            left: 20,
+            child: _buildDotPattern(),
           ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 15),
+          
+          // Background Decor: Soft Abstract Shapes
+          Positioned(
+            top: 150,
+            left: -50,
+            child: _buildGlossyOrb(const Color(0xFFB9E5CD), 150), // Simulating cube
+          ),
+          Positioned(
+            top: 250,
+            right: -30,
+            child: _buildGlossyOrb(const Color(0xFF8BBF9F), 100), // Simulating sphere
+          ),
+          Positioned(
+            bottom: -50,
+            left: -30,
+            child: _buildGlossyOrb(const Color(0xFFD4E9DF), 200),
+          ),
 
-                // Logo ClassyOne Outside the card
-                Center(
-                  child: Image.asset(
-                    'assets/images/classyone_icon.png',
-                    height: 110,
-                    fit: BoxFit.contain,
+          // Main Content
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  
+                  // Logo
+                  Center(
+                    child: Image.asset(
+                      'assets/images/classyone_icon.png',
+                      height: 90,
+                      fit: BoxFit.contain,
+                    ),
                   ),
-                ),
-                const SizedBox(
-                  height: 100,
-                ), // Increased space to push card down and fill gap
+                  const SizedBox(height: 30),
 
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(35),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(
-                        28,
-                        40,
-                        28,
-                        40,
-                      ), // Balanced internal padding
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(35),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.5),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 30,
-                            offset: const Offset(0, 15),
+                  // Glassmorphism Card
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.9),
+                            width: 1.5,
                           ),
-                        ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Bienvenue\nConnectez-vous',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                color: primarySage,
-                                height: 1.2,
-                                letterSpacing: -0.5,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
                             ),
-                            const SizedBox(height: 40),
-
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Matricule',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _buildStyledField(
-                                  controller: _matriculeController,
-                                  hintText: 'Entrez votre matricule',
-                                  icon: Icons.person_outline,
-                                  obscureText: false,
-                                  textCapitalization:
-                                      TextCapitalization.characters,
-                                  keyboardType: TextInputType.text,
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Veuillez entrer votre matricule';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  'Mot de passe',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _buildStyledField(
-                                  controller: _passwordController,
-                                  hintText: '••••••••',
-                                  icon: Icons.lock_outline,
-                                  obscureText: _obscurePassword,
-                                  isPassword: true,
-                                  onToggleVisibility: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Veuillez entrer votre mot de passe';
-                                    }
-                                    if (value.length < 4) {
-                                      return 'Le mot de passe doit contenir au moins 4 caractères';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: GestureDetector(
-                                    onTap: _showForgotPasswordDialog,
-                                    child: const Text(
-                                      'Mot de passe oublié ?',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: primarySage,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // Remember Me Checkbox Row
-                            Row(
-                              children: [
-                                SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    activeColor: primarySage,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Se souvenir de moi',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 25),
-
-                            // Login Button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 58,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primarySage,
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor: primarySage
-                                      .withValues(alpha: 0.7),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  elevation: 8,
-                                  shadowColor: primarySage.withValues(alpha: 0.4),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                    : const Text(
-                                        'Se connecter',
-                                        style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 50),
-
-                            // Social Section Inside Card
-                            const Text(
-                              'Ou connectez-vous avec',
-                              style: TextStyle(
-                                color: Colors.black38,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 15),
-                            // Compact social row to fix overflow
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Titles
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _InteractiveSocialIcon(
-                                    icon: FontAwesomeIcons.facebookF,
-                                    defaultColor: primarySage,
-                                    hoverColor: const Color(0xFF1877F2),
-                                    size: 22,
-                                    onTap: () => _launchURL(
-                                      'https://www.facebook.com/OmniaSchoolCasablanca/',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _InteractiveSocialIcon(
-                                    icon: Icons.mail_outline,
-                                    defaultColor: primarySage,
-                                    hoverColor: const Color(0xFFEA4335),
-                                    size: 22,
-                                    onTap: () =>
-                                        _launchURL('mailto:contact@osbt.ma'),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _InteractiveSocialIcon(
-                                    icon: FontAwesomeIcons.whatsapp,
-                                    defaultColor: primarySage,
-                                    hoverColor: const Color(0xFF25D366),
-                                    size: 22,
-                                    onTap: () => _launchURL(
-                                      'https://api.whatsapp.com/send/?phone=%2B212661363127',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _InteractiveSocialIcon(
-                                    icon: FontAwesomeIcons.instagram,
-                                    defaultColor: primarySage,
-                                    hoverColor: const Color(0xFFE4405F),
-                                    size: 22,
-                                    onTap: () => _launchURL(
-                                      'https://www.instagram.com/omnia_school/',
+                                  const Text("👋", style: TextStyle(fontSize: 18)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Bienvenue !',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: accentGreen,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Connectez-vous',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF1A1F3D),
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Accédez à votre espace personnel',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: 40,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: accentGreen,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(height: 40),
+
+                              // Form Fields
+                              _buildLabel('Matricule', Icons.person_outline, primaryGreen),
+                              const SizedBox(height: 8),
+                              _buildPremiumField(
+                                controller: _matriculeController,
+                                hintText: 'Entrez votre matricule',
+                                icon: Icons.person_outline,
+                                obscureText: false,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Requis';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              
+                              const SizedBox(height: 20),
+                              
+                              _buildLabel('Mot de passe', Icons.lock_outline, primaryGreen),
+                              const SizedBox(height: 8),
+                              _buildPremiumField(
+                                controller: _passwordController,
+                                hintText: 'Entrez votre mot de passe',
+                                icon: Icons.lock_outline,
+                                obscureText: _obscurePassword,
+                                isPassword: true,
+                                onToggleVisibility: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Requis';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              
+                              const SizedBox(height: 12),
+                              
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: GestureDetector(
+                                  onTap: _showForgotPasswordDialog,
+                                  child: const Text(
+                                    'Mot de passe oublié ?',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: accentGreen,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Remember Me
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: _rememberMe,
+                                      activeColor: primaryGreen,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      onChanged: (bool? value) {
+                                        setState(() {
+                                          _rememberMe = value ?? false;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text(
+                                    'Se souvenir de moi',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 30),
+
+                              // Login Button
+                              Container(
+                                width: double.infinity,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF2E8B57), Color(0xFF1B5E20)],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: primaryGreen.withOpacity(0.3),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(color: Colors.white70, width: 1.5),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Text(
+                                              'Se connecter',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              // Divider
+                              Row(
+                                children: [
+                                  Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      'ou connectez-vous avec',
+                                      style: TextStyle(
+                                        color: Colors.black45,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Social Cards
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: _buildSocialCard(
+                                      icon: FontAwesomeIcons.facebookF,
+                                      label: 'Facebook',
+                                      color: primaryGreen,
+                                      onTap: () => _launchURL('https://www.facebook.com/OmniaSchoolCasablanca/'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildSocialCard(
+                                      icon: Icons.mail_outline,
+                                      label: 'Email',
+                                      color: primaryGreen,
+                                      onTap: () => _launchURL('mailto:contact@osbt.ma'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildSocialCard(
+                                      icon: FontAwesomeIcons.whatsapp,
+                                      label: 'WhatsApp',
+                                      color: primaryGreen,
+                                      onTap: () => _launchURL('https://api.whatsapp.com/send/?phone=%2B212661363127'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildSocialCard(
+                                      icon: FontAwesomeIcons.instagram,
+                                      label: 'Instagram',
+                                      color: primaryGreen,
+                                      onTap: () => _launchURL('https://www.instagram.com/omnia_school_of_business_tech/'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 15),
-              ],
+
+                  const SizedBox(height: 30),
+
+                  // Secure Connection Text
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.verified_user_outlined, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Connexion sécurisée',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildStyledField({
+  Widget _buildLabel(String text, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumField({
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
-    required bool obscureText,
     bool isPassword = false,
+    bool obscureText = false,
     VoidCallback? onToggleVisibility,
-    required String? Function(String?) validator,
-    TextInputType keyboardType = TextInputType.text,
-    TextCapitalization textCapitalization = TextCapitalization.none,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      keyboardType: keyboardType,
-      textCapitalization: textCapitalization,
-      style: const TextStyle(fontSize: 15, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFFF6F7F2),
         hintText: hintText,
-        hintStyle: TextStyle(
-          color: Colors.black.withOpacity(0.3),
-          fontSize: 15,
-        ),
-        prefixIcon: Icon(icon, color: Colors.black45, size: 20),
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+        prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 20),
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  obscureText
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: Colors.black38,
+                  obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: Colors.grey.shade500,
                   size: 20,
                 ),
                 onPressed: onToggleVisibility,
               )
             : null,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.green.shade100, width: 1.5),
+        ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.black.withOpacity(0.05)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.green.shade100, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1A1F3D), width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF298A5E), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 16,
-          horizontal: 16,
-        ),
-        errorStyle: const TextStyle(
-          color: Colors.redAccent,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),
       validator: validator,
     );
   }
 
-  @override
-  void dispose() {
-    _matriculeController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-}
-
-class _InteractiveSocialIcon extends StatefulWidget {
-  final IconData icon;
-  final Color defaultColor;
-  final Color hoverColor;
-  final VoidCallback onTap;
-  final double size;
-
-  const _InteractiveSocialIcon({
-    required this.icon,
-    required this.defaultColor,
-    required this.hoverColor,
-    required this.onTap,
-    this.size = 22,
-  });
-
-  @override
-  State<_InteractiveSocialIcon> createState() => _InteractiveSocialIconState();
-}
-
-class _InteractiveSocialIconState extends State<_InteractiveSocialIcon> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutBack,
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          transform: Matrix4.identity()..scale(_isHovered ? 1.15 : 1.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(25),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _isHovered
-                      ? widget.hoverColor.withOpacity(0.08)
-                      : const Color(0xFFE2E5E0).withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _isHovered
-                        ? widget.hoverColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.03),
-                    width: 1,
-                  ),
-                  boxShadow: _isHovered
-                      ? [
-                          BoxShadow(
-                            color: widget.hoverColor.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: _isHovered
-                      ? widget.hoverColor
-                      : widget.defaultColor.withOpacity(0.7),
-                  size: widget.size,
-                ),
+  Widget _buildSocialCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade100, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDotPattern() {
+    return Row(
+      children: List.generate(4, (i) {
+        return Column(
+          children: List.generate(5, (j) {
+            return Container(
+              margin: const EdgeInsets.all(4),
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        );
+      }),
+    );
+  }
+
+  Widget _buildGlossyOrb(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withOpacity(0.8),
+            color.withOpacity(0.0),
+          ],
         ),
       ),
     );

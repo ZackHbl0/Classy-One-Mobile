@@ -126,16 +126,51 @@ class _PlanningPageState extends State<PlanningPage> {
     return filtered;
   }
 
+  String _getMonthName(int month) {
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return months[month - 1];
+  }
+
+  Widget _buildMatiereIcon(String matiere) {
+    final m = matiere.toLowerCase();
+    Widget iconContent;
+    
+    if (m.contains('javascript') || m.contains('code') || m.contains('dev')) {
+      iconContent = const Text('</>', style: TextStyle(color: Color(0xFF2A593E), fontWeight: FontWeight.bold, fontSize: 16));
+    } else if (m.contains('sport') || m.contains('eps')) {
+      iconContent = const Icon(Icons.directions_run, color: Color(0xFF2A593E), size: 20);
+    } else if (m.contains('arab')) {
+      iconContent = const Text('ض', style: TextStyle(color: Color(0xFF2A593E), fontWeight: FontWeight.bold, fontSize: 18));
+    } else if (m.contains('php')) {
+      iconContent = const Text('php', style: TextStyle(color: Color(0xFF2A593E), fontWeight: FontWeight.bold, fontSize: 14));
+    } else {
+      iconContent = Text(matiere.isNotEmpty ? matiere.substring(0, 1).toUpperCase() : 'C', style: const TextStyle(color: Color(0xFF2A593E), fontWeight: FontWeight.bold, fontSize: 18));
+    }
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE8F5E9),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: iconContent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryBlue = const Color(0xFF203B68);
+    final primaryGreen = const Color(0xFF3BBE7A);
     final todaysClasses = _getClassesForSelectedDay();
 
+    final now = DateTime.now();
+    final selectedDate = now.subtract(Duration(days: now.weekday - _selectedDayOfWeek));
+    final dateString = "${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}";
+
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF1E241E)
-          : const Color(0xFFF6F7F2),
+      backgroundColor: isDark ? const Color(0xFF1E241E) : const Color(0xFFF9FAFB),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -144,19 +179,14 @@ class _PlanningPageState extends State<PlanningPage> {
             // ── Header ──────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const ScreenHeader(title: 'Emploi du temps'),
-                ],
-              ),
+              child: const ScreenHeader(title: 'Emploi du temps'),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             // ── Static Weekday Tabs ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: List.generate(7, (index) {
                   final dayIndex = index + 1; // 1=Mon … 7=Sun
@@ -164,30 +194,31 @@ class _PlanningPageState extends State<PlanningPage> {
 
                   return Expanded(
                     child: GestureDetector(
-                      onTap: () =>
-                          setState(() => _selectedDayOfWeek = dayIndex),
+                      onTap: () => setState(() => _selectedDayOfWeek = dayIndex),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 3),
-                        height: 56,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? primaryBlue
-                              : (isDark
-                                    ? const Color(0xFF2A322A)
-                                    : Colors.white),
-                          borderRadius: BorderRadius.circular(14),
+                          gradient: isSelected ? const LinearGradient(
+                            colors: [Color(0xFF3BBE7A), Color(0xFF2A9D60)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ) : null,
+                          color: isSelected ? null : (isDark ? const Color(0xFF2A322A) : Colors.white),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             if (isSelected)
                               BoxShadow(
-                                color: primaryBlue.withOpacity(0.3),
-                                blurRadius: 8,
+                                color: primaryGreen.withOpacity(0.3),
+                                blurRadius: 10,
                                 offset: const Offset(0, 4),
                               )
                             else
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 6,
+                                color: Colors.black.withOpacity(0.02),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
                           ],
                         ),
@@ -195,13 +226,9 @@ class _PlanningPageState extends State<PlanningPage> {
                           child: Text(
                             _dayLabels[index],
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isDark
-                                        ? Colors.white54
-                                        : Colors.grey[600]),
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.grey[700]),
                             ),
                           ),
                         ),
@@ -212,18 +239,50 @@ class _PlanningPageState extends State<PlanningPage> {
               ),
             ),
 
-            // ── Selected Day Full Name ───────────────────────────────
+            // ── Date and Filter Header ───────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                _dayFullNames[_selectedDayOfWeek - 1],
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white70 : Colors.black54,
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.calendar_today_outlined, color: Color(0xFF2A593E), size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _dayFullNames[_selectedDayOfWeek - 1],
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dateString,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 8),
 
             // ── Timeline ─────────────────────────────────────────────
             Expanded(
@@ -234,18 +293,13 @@ class _PlanningPageState extends State<PlanningPage> {
                       child: todaysClasses.isEmpty
                           ? _buildEmptyState()
                           : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                10,
-                                20,
-                                100,
-                              ),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                               itemCount: todaysClasses.length,
-                              itemBuilder: (context, index) =>
-                                  _buildTimelineCard(
-                                    todaysClasses[index],
-                                    isDark,
-                                  ),
+                              itemBuilder: (context, index) => _buildTimelineCard(
+                                todaysClasses[index],
+                                isDark,
+                                isLast: index == todaysClasses.length - 1,
+                              ),
                             ),
                     ),
             ),
@@ -255,9 +309,9 @@ class _PlanningPageState extends State<PlanningPage> {
     );
   }
 
-  // ── Timeline Card (unchanged design) ────────────────────────────────────────
-  Widget _buildTimelineCard(dynamic classData, bool isDark) {
-    const accentBlue = Color(0xFF708C70);
+  // ── Timeline Card ────────────────────────────────────────
+  Widget _buildTimelineCard(dynamic classData, bool isDark, {bool isLast = false}) {
+    final primaryGreen = const Color(0xFF3BBE7A);
 
     final matiere = classData['matiere'] ?? 'Cours';
     final salle = classData['salle'] ?? 'Salle Non Spécifiée';
@@ -267,121 +321,188 @@ class _PlanningPageState extends State<PlanningPage> {
     final startTime = format(classData['check_in'] ?? '00:00:00');
     final endTime = format(classData['check_out'] ?? '00:00:00');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Time column
-            SizedBox(
-              width: 65,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    startTime,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: isDark ? Colors.white : Colors.black87,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Time column
+          SizedBox(
+            width: 50,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const SizedBox(height: 24),
+                Text(
+                  startTime,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : const Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  endTime,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Vertical line with dot
+          SizedBox(
+            width: 32,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                if (!isLast)
+                  Positioned(
+                    top: 28,
+                    bottom: -20, // extend to next item
+                    child: Container(
+                      width: 2,
+                      color: isDark ? Colors.white12 : Colors.grey.shade200,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    endTime,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.grey,
+                Positioned(
+                  top: 28,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: primaryGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Content card
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A322A) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Left colored border
+                  Container(
+                    width: 4,
+                    decoration: BoxDecoration(
+                      color: primaryGreen,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                      ),
+                    ),
+                  ),
+                  
+                  // Card Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          _buildMatiereIcon(matiere),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  matiere,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person_outline,
+                                      size: 14,
+                                      color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        professeur,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 14,
+                                      color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        salle,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // "Cours" badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'Cours',
+                              style: TextStyle(
+                                color: Color(0xFF3BBE7A),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Vertical accent bar
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 14),
-              width: 3,
-              decoration: BoxDecoration(
-                color: accentBlue.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-
-            // Content card
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A322A) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      matiere,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isDark ? Colors.white : const Color(0xFF2A322A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline,
-                          size: 14,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            professeur,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? Colors.white60 : Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            salle,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? Colors.white60 : Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
