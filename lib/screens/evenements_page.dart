@@ -36,11 +36,10 @@ class _EvenementsPageState extends State<EvenementsPage> {
     _fetchEvenements();
   }
 
-  Future<void> _fetchEvenements({String? category}) async {
+  Future<void> _fetchEvenements() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
-      if (category != null) _selectedCategory = category;
     });
 
     final prefs = await SharedPreferences.getInstance();
@@ -48,7 +47,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
 
     final result = await _authService.getEvenements(
       idStudent,
-      category: _selectedCategory,
+      category: 'Tout',
     );
 
     if (mounted) {
@@ -57,7 +56,10 @@ class _EvenementsPageState extends State<EvenementsPage> {
         if (result['success'] == true) {
           final List<dynamic> data = result['data'] ?? [];
           _allEvents = data.map((e) => EventModel.fromJson(e)).toList();
-          _filteredEvents = _allEvents;
+          for (var e in _allEvents) {
+            print('DEBUG_CAT: "${e.title}" -> "${e.category}"');
+          }
+          _filterEvents(_selectedCategory); // apply initial filter
         } else {
           _errorMessage = result['message'] ?? 'Erreur lors du chargement';
         }
@@ -65,9 +67,26 @@ class _EvenementsPageState extends State<EvenementsPage> {
     }
   }
 
+  String _normalizeCategory(String cat) {
+    return cat.toLowerCase()
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .trim();
+  }
+
   void _filterEvents(String category) {
-    if (_selectedCategory == category && !_isLoading) return;
-    _fetchEvenements(category: category);
+    setState(() {
+      _selectedCategory = category;
+      if (category == 'Tout') {
+        _filteredEvents = _allEvents;
+      } else {
+        final normSelected = _normalizeCategory(category);
+        _filteredEvents = _allEvents
+            .where((e) => _normalizeCategory(e.category) == normSelected)
+            .toList();
+      }
+    });
   }
 
   @override
@@ -509,7 +528,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
     Color tagBgColor = const Color(0xFFEEF2FF);
     Color tagColor = const Color(0xFF4F46E5);
     IconData cardIcon = Icons.code_rounded;
-    String tagText = "Académique";
+    String tagText = event.category;
 
     if (isToday) {
       iconBgColor = const Color(0xFFDCFCE7);
@@ -518,20 +537,20 @@ class _EvenementsPageState extends State<EvenementsPage> {
       tagColor = const Color(0xFF10B981);
       cardIcon = Icons.school_rounded;
       tagText = "Aujourd'hui";
-    } else if (event.title.toLowerCase().contains('tournoi')) {
+    } else if (event.category.toLowerCase().contains('sport')) {
       iconBgColor = const Color(0xFFF3E8FF);
       iconColor = const Color(0xFF9333EA);
       tagBgColor = const Color(0xFFF3E8FF);
       tagColor = const Color(0xFF9333EA);
       cardIcon = Icons.sports_soccer_rounded;
-      tagText = "Sports";
-    } else if (event.title.toLowerCase().contains('soirée')) {
+    } else if (event.category.toLowerCase().contains('club')) {
       iconBgColor = const Color(0xFFFFEDD5);
       iconColor = const Color(0xFFEA580C);
       tagBgColor = const Color(0xFFFFEDD5);
       tagColor = const Color(0xFFEA580C);
       cardIcon = Icons.groups_rounded;
-      tagText = "Clubs";
+    } else {
+      cardIcon = Icons.school_rounded;
     }
 
     if (isDark) {

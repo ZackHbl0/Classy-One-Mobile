@@ -277,7 +277,7 @@ class _PaiementPageState extends State<PaiementPage> {
   }
 
   Widget _buildTrancheCard(dynamic tranche, bool isDark, {bool isLast = false}) {
-    String status = tranche['status'] ?? 'En attente';
+    String status = tranche['status'] ?? 'Non Payé';
     Color statusColor = _getStatutColor(status);
     bool isPaid = status == 'Payé';
 
@@ -406,7 +406,7 @@ class _PaiementPageState extends State<PaiementPage> {
     switch (status) {
       case 'Payé': return const Color(0xFF3BBE7A);
       case 'En retard': return Colors.red;
-      case 'En attente': return Colors.orange;
+      case 'Non Payé': return Colors.red;
       default: return Colors.grey;
     }
   }

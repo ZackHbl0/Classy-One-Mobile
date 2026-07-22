@@ -81,38 +81,7 @@ class ContactSupportPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              IconButton(
-                                onPressed: () {}, // Example notifications
-                                icon: Icon(Icons.notifications_none_rounded, color: textColor),
-                              ),
-                              Positioned(
-                                right: 12,
-                                top: 12,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(width: 48),
                       ],
                     ),
                   ),

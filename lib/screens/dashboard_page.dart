@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'notifications_page.dart';
 import 'paiement_page.dart';
 import 'planning_page.dart';
 import 'grades_screen.dart';
+import 'absences_screen.dart';
 
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
@@ -54,6 +56,8 @@ class _DashboardPageState extends State<DashboardPage>
   Animation<double>? _fadeAnimation;
 
   ScrollController? _scrollController;
+  PageController? _summaryPageController;
+  Timer? _summaryTimer;
 
   final AuthService _authService = AuthService();
 
@@ -70,11 +74,33 @@ class _DashboardPageState extends State<DashboardPage>
     );
 
     _scrollController = ScrollController();
+    _summaryPageController = PageController(viewportFraction: 0.92);
+    _summaryTimer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+      if (_summaryPageController?.hasClients ?? false) {
+        int nextIndex = _currentCarouselIndex + 1;
+        if (nextIndex >= 3) {
+          nextIndex = 0;
+          _summaryPageController?.animateToPage(
+            nextIndex,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          _summaryPageController?.nextPage(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+
     _loadUserData();
   }
 
   @override
   void dispose() {
+    _summaryTimer?.cancel();
+    _summaryPageController?.dispose();
     _scrollController?.dispose();
     _fadeController?.dispose();
     super.dispose();
@@ -316,12 +342,15 @@ class _DashboardPageState extends State<DashboardPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── 1. RÉSUMÉ RAPIDE ──
+              _buildSummarySlider(isDark),
+              const SizedBox(height: 28),
 
-              // ── 1. HERO — Notes ──
+              // ── 2. HERO — Notes ──
               _buildHeroGradeCard(isDark),
               const SizedBox(height: 28),
 
-              // ── 2. COURS DU JOUR ──
+              // ── 3. COURS DU JOUR ──
               _buildSectionLabel('Cours du jour', isDark, onTap: () {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const PlanningPage()));
@@ -330,7 +359,7 @@ class _DashboardPageState extends State<DashboardPage>
               _buildTodayCoursesSection(isDark),
               const SizedBox(height: 28),
 
-              // ── 3. NOTIFICATIONS URGENTES ──
+              // ── 4. NOTIFICATIONS URGENTES ──
               if (_urgentNotifications.isNotEmpty) ...[
                 _buildSectionLabel('Notifications urgentes', isDark,
                     onTap: () {
@@ -344,7 +373,7 @@ class _DashboardPageState extends State<DashboardPage>
                 const SizedBox(height: 28),
               ],
 
-              // ── 4. ACTIVITÉ RÉCENTE ──
+              // ── 5. ACTIVITÉ RÉCENTE ──
               if (_recentActivityFeed.isNotEmpty) ...[
                 _buildSectionLabel('Activité récente', isDark),
                 const SizedBox(height: 14),
@@ -352,12 +381,8 @@ class _DashboardPageState extends State<DashboardPage>
                 const SizedBox(height: 28),
               ],
 
-              // ── 5. PROGRESSION SEMESTRE ──
+              // ── 6. PROGRESSION SEMESTRE ──
               _buildProgressionCard(isDark),
-              const SizedBox(height: 28),
-
-              // ── 6. RÉSUMÉ RAPIDE ──
-              _buildSummaryGrid(isDark),
             ],
           ),
         ),
@@ -1209,25 +1234,29 @@ class _DashboardPageState extends State<DashboardPage>
   //  RÉSUMÉ RAPIDE
   // ═══════════════════════════════════════════════════════════════
 
-  Widget _buildSummaryGrid(bool isDark) {
+  Widget _buildSummarySlider(bool isDark) {
     return Consumer2<PaymentProvider, NotificationProvider>(
       builder: (context, paymentProv, notifProv, _) {
         final items = [
           {
-            'label': 'Cours suivis',
+            'title': 'Cours suivis',
             'value': '${_todaySessions.length}',
             'icon': Icons.school_outlined,
-            'color': const Color(0xFF4F7942),
+            'color': const Color(0xFF4F7942), // Green
+            'gradient': const [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+            'darkGradient': const [Color(0xFF2E3B32), Color(0xFF1E2B1E)],
             'onTap': () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const PlanningPage())),
           },
           {
-            'label': 'Paiements',
+            'title': 'Paiements',
             'value': paymentProv.isLoading
                 ? '...'
                 : '${paymentProv.progression.toInt()}%',
             'icon': Icons.account_balance_wallet_outlined,
-            'color': const Color(0xFFF59E0B),
+            'color': const Color(0xFFF59E0B), // Orange
+            'gradient': const [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+            'darkGradient': const [Color(0xFF3E3222), Color(0xFF2E2212)],
             'onTap': () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1235,107 +1264,143 @@ class _DashboardPageState extends State<DashboardPage>
                         const PaiementPage(showBackButton: true))),
           },
           {
-            'label': 'Notifs',
-            'value': '${notifProv.unreadCount}',
-            'icon': Icons.notifications_outlined,
-            'color': const Color(0xFF8B5CF6),
+            'title': 'Absences',
+            'value': '${_stats['absences_count'] ?? 0}',
+            'icon': Icons.person_off_outlined,
+            'color': const Color(0xFFF97316), // Deep Orange/Red
+            'gradient': const [Color(0xFFFBE9E7), Color(0xFFFFCCBC)],
+            'darkGradient': const [Color(0xFF3E2222), Color(0xFF2E1212)],
             'onTap': () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const NotificationsPage())),
-          },
-          {
-            'label': 'Événements',
-            'value': _nextEvent != null ? '1' : '0',
-            'icon': Icons.event_outlined,
-            'color': const Color(0xFFEF4444),
-            'onTap': () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const EvenementsPage())),
+                    builder: (_) => const AbsencesScreen())),
           },
         ];
 
-        final topRow = items.sublist(0, 2);
-        final bottomRow = items.sublist(2, 4);
-
-        Widget buildCard(Map<String, dynamic> item) {
-          final color = item['color'] as Color;
-          return Expanded(
-            child: GestureDetector(
-              onTap: item['onTap'] as VoidCallback,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(item['icon'] as IconData,
-                          color: color, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          item['value'] as String,
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1A1A2E),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          item['label'] as String,
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
         return Column(
           children: [
-            Row(
-              children: [
-                buildCard(topRow[0]),
-                const SizedBox(width: 12),
-                buildCard(topRow[1]),
-              ],
+            SizedBox(
+              height: 130, // Premium height
+              child: PageView.builder(
+                controller: _summaryPageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentCarouselIndex = index;
+                  });
+                },
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  final color = item['color'] as Color;
+                  final gradientColors = isDark 
+                      ? item['darkGradient'] as List<Color>
+                      : item['gradient'] as List<Color>;
+
+                  return GestureDetector(
+                    onTap: item['onTap'] as VoidCallback,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: gradientColors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(isDark ? 0.2 : 0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          // Background Icon (Watermark)
+                          Positioned(
+                            right: -10,
+                            bottom: -10,
+                            child: Icon(
+                              item['icon'] as IconData,
+                              size: 100,
+                              color: color.withOpacity(0.05),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Icon Box
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black26 : Colors.white.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(item['icon'] as IconData,
+                                      color: color, size: 28),
+                                ),
+                                const SizedBox(width: 20),
+                                // Text Content
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        item['title'] as String,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item['value'] as String,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black87,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            // Smooth Dots Indicator
             Row(
-              children: [
-                buildCard(bottomRow[0]),
-                const SizedBox(width: 12),
-                buildCard(bottomRow[1]),
-              ],
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(items.length, (index) {
+                final isActive = _currentCarouselIndex == index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isActive ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive 
+                        ? (items[index]['color'] as Color) 
+                        : Colors.grey.withOpacity(isDark ? 0.3 : 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                );
+              }),
             ),
           ],
         );

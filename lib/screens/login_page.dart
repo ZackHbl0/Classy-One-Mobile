@@ -257,8 +257,6 @@ class _LoginPageState extends State<LoginPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text("👋", style: TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 8),
                                   Text(
                                     'Bienvenue !',
                                     style: TextStyle(
@@ -463,7 +461,7 @@ class _LoginPageState extends State<LoginPage> {
                                   const Padding(
                                     padding: EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      'ou connectez-vous avec',
+                                      'Bienvenue sur nos réseaux',
                                       style: TextStyle(
                                         color: Colors.black45,
                                         fontSize: 12,

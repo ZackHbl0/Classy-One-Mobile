@@ -37,7 +37,8 @@ class NotificationProvider with ChangeNotifier {
   }
 
   Future<bool> markAllAsRead(int idStudent) async {
-    if (idStudent == 0 || unreadCount == 0) return false;
+    if (idStudent == 0) return false;
+    if (unreadCount == 0) return true;
 
     final result = await _authService.markNotificationsRead(idStudent);
     if (result['success'] == true) {

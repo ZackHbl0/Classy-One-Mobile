@@ -425,12 +425,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    context.read<NotificationProvider>().markAllAsRead(
-                      SharedPreferences.getInstance().then((p) => p.getInt('idStudent') ?? 0) as int
-                    ); 
-                    _markAllAsRead(context.read<NotificationProvider>());
-                  },
+                  onPressed: () => _markAllAsRead(context.read<NotificationProvider>()),
                   icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
                   label: Text('Tout lire', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
                   style: ElevatedButton.styleFrom(

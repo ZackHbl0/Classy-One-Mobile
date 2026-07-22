@@ -11,7 +11,7 @@ import '../screens/paiement_page.dart';
 import '../screens/settings_page.dart';
 import '../screens/main_screen.dart';
 import '../screens/documents_page.dart';
-import '../screens/recent_chats_screen.dart';
+
 
 class CustomSidebar extends StatefulWidget {
   final String? currentRoute;
@@ -405,14 +405,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                           isActive: widget.currentRoute == '/absences',
                           onTap: () => _navigateTo(context, const AbsencesScreen()),
                         ),
-                        _MenuItem(
-                          icon: Icons.chat_bubble_outline,
-                          label: 'Messagerie',
-                          textColor: textColor,
-                          iconColor: iconColor,
-                          isActive: widget.currentRoute == '/messagerie',
-                          onTap: () => _navigateTo(context, const RecentChatsScreen()),
-                        ),
+
                         _MenuItem(
                           icon: Icons.description_outlined,
                           label: 'Documents',

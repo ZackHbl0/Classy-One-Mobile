@@ -72,38 +72,7 @@ class AboutPage extends StatelessWidget {
                       color: textColor,
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(Icons.notifications_none_rounded, color: textColor),
-                        ),
-                        Positioned(
-                          right: 12,
-                          top: 12,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -212,7 +181,7 @@ class AboutPage extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // ── Développé avec ❤️ par ────────────────────────────
+                    // ── Développé par ────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -229,7 +198,7 @@ class AboutPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Développé avec ', primary, heart: true),
+                          _buildSectionTitle('Développé par', primary),
                           const SizedBox(height: 16),
                           _buildDeveloperRow(
                             name: 'Zakaria',

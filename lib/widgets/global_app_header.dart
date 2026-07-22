@@ -5,8 +5,6 @@ import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
 import '../screens/notifications_page.dart';
 import '../screens/profile_page.dart';
-import '../screens/professors_list_screen.dart';
-import '../screens/recent_chats_screen.dart';
 import '../screens/main_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -408,17 +406,25 @@ class _NotifIcon extends StatelessWidget {
             ),
             if (hasUnread)
               Positioned(
-                top: -1,
-                right: -1,
+                top: -4,
+                right: -4,
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,
                       width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    provider.unreadCount > 99 ? '99+' : provider.unreadCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
                     ),
                   ),
                 ),
