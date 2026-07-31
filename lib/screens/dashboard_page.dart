@@ -314,10 +314,12 @@ class _DashboardPageState extends State<DashboardPage>
       slivers: [
         // ── DYNAMIC HEADER ──
         SliverAppBar(
-          floating: true, // Le header disparaît au scroll down, réapparaît au scroll up
+          pinned: true, // Le header reste fixé en haut
+          floating: false,
           snap: false,
           elevation: 0,
-          backgroundColor: Colors.transparent,
+          backgroundColor: bg,
+          surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
           toolbarHeight: 112, // 56 (GlobalAppHeader standard height) + 32 (top) + 24 (bottom)
           flexibleSpace: FlexibleSpaceBar(

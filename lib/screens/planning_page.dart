@@ -179,7 +179,7 @@ class _PlanningPageState extends State<PlanningPage> {
             // ── Header ──────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 10),
-              child: const ScreenHeader(title: 'Emploi du temps'),
+              child: const ScreenHeader(title: 'Emploi du temps', showBackButton: true),
             ),
 
             const SizedBox(height: 10),
