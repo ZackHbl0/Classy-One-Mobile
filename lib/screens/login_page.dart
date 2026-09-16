@@ -1,3 +1,4 @@
+import 'parent_login_screen.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -452,7 +453,36 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
 
-                              const SizedBox(height: 40),
+                              const SizedBox(height: 16),
+
+                              // Parent Login Button
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const ParentLoginScreen()),
+                                  );
+                                },
+                                icon: const Icon(Icons.family_restroom, size: 18, color: primaryGreen),
+                                label: const Text(
+                                  'Espace Parents / ولي الأمر',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryGreen,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 48),
+                                  side: BorderSide(color: primaryGreen.withOpacity(0.4), width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  backgroundColor: primaryGreen.withOpacity(0.04),
+                                ),
+                              ),
+
+                              const SizedBox(height: 30),
 
                               // Divider
                               Row(

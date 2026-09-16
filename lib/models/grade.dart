@@ -20,6 +20,7 @@ class Grade {
   final String? semester;
   final String? colorKey;       // API key: color ('success','info','primary','warning','danger')
   final bool isPassing;         // API key: is_passing
+  final double coefficient;     // API key: coefficient
 
   Grade({
     required this.id,
@@ -35,6 +36,7 @@ class Grade {
     this.semester,
     this.colorKey,
     this.isPassing = true,
+    this.coefficient = 1.0,
   });
 
   /// Factory constructor to create a Grade from the Laravel API JSON.
@@ -78,6 +80,7 @@ class Grade {
           json['type_evaluation']?.toString(),
       semester: json['semester']?.toString(),
       colorKey: json['color']?.toString(),
+      coefficient: _parseDouble(json['coefficient'], 1.0),
       isPassing: json['is_passing'] == true ||
           json['is_passing'] == 1 ||
           json['is_passing'] == '1',
@@ -199,28 +202,30 @@ class GradeSummary {
 
     // Parse the average — Laravel sends it as "average"
     final average = _parseDouble(
-      json['average'] ?? json['moyenne_generale'],
+      json['weighted_average'] ?? json['average'] ?? json['moyenne_generale'],
     );
 
     // Parse total count — Laravel sends it as "total_grades"
     final totalGrades = _parseInt(
-      json['total_grades'] ?? json['total_courses'] ?? json['total_cours'],
+      json['total_courses'] ?? json['total_cours'] ?? json['total_grades'],
     );
 
     // Compute status from average if not provided
     String computedStatus;
-    if (json['status'] != null) {
+        if (json['status'] != null && json['status'].toString().isNotEmpty) {
       computedStatus = json['status'].toString();
-    } else if (average >= 16) {
+    } else if (average >= 18) {
       computedStatus = 'Excellent';
-    } else if (average >= 14) {
+    } else if (average >= 16) {
       computedStatus = 'Très Bien';
-    } else if (average >= 12) {
+    } else if (average >= 14) {
       computedStatus = 'Bien';
+    } else if (average >= 12) {
+      computedStatus = 'Assez Bien';
     } else if (average >= 10) {
       computedStatus = 'Passable';
     } else {
-      computedStatus = 'Insuffisant';
+      computedStatus = 'Ajourné';
     }
 
     return GradeSummary(

@@ -47,28 +47,45 @@ class FcmService {
 
   static Future<void> clearTokenOnServer() async {
     final prefs = await SharedPreferences.getInstance();
+    final userRole = prefs.getString('user_role') ?? 'student';
     final idStudent = prefs.getInt('idStudent') ?? 0;
-    if (idStudent != 0) {
-      debugPrint('FCM: Clearing token on server...');
+    
+    if (userRole == 'parent') {
+      debugPrint('FCM: Clearing parent token on server...');
+      await _authService.updateParentFcmToken('');
+      debugPrint('FCM: Parent token cleared on server');
+    } else if (idStudent != 0) {
+      debugPrint('FCM: Clearing student token on server...');
       await _authService.updateFcmToken('');
-      debugPrint('FCM: Token cleared on server');
+      debugPrint('FCM: Student token cleared on server');
     }
   }
 
   static Future<void> _sendTokenToBackend(String token) async {
     final prefs = await SharedPreferences.getInstance();
+    final userRole = prefs.getString('user_role') ?? 'student';
     final idStudent = prefs.getInt('idStudent') ?? 0;
     
     // Also check if notifications are enabled in settings
     final notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
     
-    if (idStudent != 0 && notificationsEnabled) {
-      debugPrint('FCM: Syncing token with Laravel...');
-      final result = await _authService.updateFcmToken(token);
-      if (result['success'] == true) {
-        debugPrint('FCM: Token successfully synced with Laravel');
-      } else {
-        debugPrint('FCM: Failed to sync token: ${result['message']}');
+    if (notificationsEnabled) {
+      if (userRole == 'parent') {
+        debugPrint('FCM: Syncing parent token with Laravel...');
+        final result = await _authService.updateParentFcmToken(token);
+        if (result['success'] == true) {
+          debugPrint('FCM: Parent token successfully synced with Laravel');
+        } else {
+          debugPrint('FCM: Failed to sync parent token: ${result['message']}');
+        }
+      } else if (idStudent != 0) {
+        debugPrint('FCM: Syncing student token with Laravel...');
+        final result = await _authService.updateFcmToken(token);
+        if (result['success'] == true) {
+          debugPrint('FCM: Student token successfully synced with Laravel');
+        } else {
+          debugPrint('FCM: Failed to sync student token: ${result['message']}');
+        }
       }
     }
   }

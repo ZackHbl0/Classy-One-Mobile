@@ -19,6 +19,7 @@ class _GradesScreenState extends State<GradesScreen> {
   GradeSummary? _summary;
   List<Grade> _grades = [];
   final Map<String, double> _courseAverages = {};
+  final Map<String, String> _courseStatuses = {};
 
   // Data grouping: Semester -> Course -> Evaluation Type -> Grade
   final Map<String, Map<String, Map<String, Grade>>> _groupedGrades = {};
@@ -568,11 +569,12 @@ class _GradesScreenState extends State<GradesScreen> {
   }
 
   String _getGradeStatus(double note) {
-    if (note >= 16) return 'Excellent';
-    if (note >= 14) return 'Très Bien';
-    if (note >= 12) return 'Bien';
+    if (note >= 18) return 'Excellent';
+    if (note >= 16) return 'Très Bien';
+    if (note >= 14) return 'Bien';
+    if (note >= 12) return 'Assez Bien';
     if (note >= 10) return 'Passable';
-    return 'Insuffisant';
+    return 'Ajourné';
   }
 
   IconData _getCourseIcon(String courseName) {
@@ -624,7 +626,7 @@ class _GradesScreenState extends State<GradesScreen> {
     final primaryColor = const Color(0xFF8B5CF6);
 
     final avgColor = _getGradeColor(courseAvg);
-    final avgStatus = _getGradeStatus(courseAvg);
+    final avgStatus = _courseStatuses[rawCourseName] ?? _getGradeStatus(courseAvg);
 
     final ctrl1 = _findGrade(gradesByType, ['Contrôle 1', 'Ctrl 1']);
     final ctrl2 = _findGrade(gradesByType, ['Contrôle 2', 'Ctrl 2']);

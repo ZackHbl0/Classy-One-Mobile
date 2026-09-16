@@ -1,3 +1,4 @@
+import '../models/parent_dashboard_model.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -496,7 +497,7 @@ class AuthService {
   }
 
 
-  // ─── Absences Methods ──────────────────────────────────────────
+  // â”€â”€â”€ Absences Methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Map<String, dynamic>> getAbsences() async {
     final url = Uri.parse('$baseUrl/student/absences');
@@ -532,5 +533,165 @@ class AuthService {
     } catch (e) {
       return {'status': 'error', 'message': 'Connection error: $e'};
     }
+  }
+
+  // -------------------------------------------------------------
+  // PARENT PORTAL AUTH, DASHBOARD, DOCUMENTS & NOTIFICATIONS
+  // -------------------------------------------------------------
+
+  Future<Map<String, dynamic>> parentLogin(
+    String email,
+    String password, {
+    String fcmToken = '',
+  }) async {
+    if (fcmToken.isEmpty) {
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken() ?? '';
+      } catch (e) {
+        debugPrint('Erreur FCM Parent: $e');
+      }
+    }
+
+    final url = Uri.parse('$baseUrl/parent/login');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          if (fcmToken.isNotEmpty) 'fcmToken': fcmToken,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && (data['status'] == 'success' || data['success'] == true)) {
+        final prefs = await SharedPreferences.getInstance();
+        if (data['token'] != null) {
+          await prefs.setString('auth_token', data['token']);
+          await prefs.setString('user_role', 'parent');
+        }
+        if (data['parent'] != null) {
+          await prefs.setString('parent_name', data['parent']['name'] ?? '');
+          await prefs.setString('parent_email', data['parent']['email'] ?? '');
+          await prefs.setString('parent_phone', data['parent']['phone'] ?? '');
+        }
+        return {'success': true, 'data': data};
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erreur d\'authentification (${response.statusCode})',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion : $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateParentFcmToken(String fcmToken) async {
+    final url = Uri.parse('$baseUrl/parent/update-fcm-token');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'fcmToken': fcmToken}),
+      );
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'message': data['message'] ?? ''};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getParentDocumentRequests({int? studentId}) async {
+    final query = studentId != null ? '?student_id=$studentId' : '';
+    final url = Uri.parse('$baseUrl/parent/documents$query');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data['data'] ?? []};
+      }
+      return {'success': false, 'message': 'Erreur serveur: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion : $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createParentDocumentRequest({
+    required int studentId,
+    required String documentType,
+    String? reason,
+    String? comments,
+    required String urgency,
+  }) async {
+    final url = Uri.parse('$baseUrl/parent/documents');
+    try {
+      final headers = await _getHeaders();
+      final finalReason = (reason != null && reason.isNotEmpty)
+          ? reason
+          : ((comments != null && comments.isNotEmpty) ? comments : 'Demande parent');
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'student_id': studentId,
+          'document_type': documentType,
+          'reason': finalReason,
+          'comments': finalReason,
+          'urgency': urgency,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 201 || (data['status'] == 'success'),
+        'message': data['message'] ?? (response.statusCode == 201 ? 'Demande soumise avec succès.' : 'Erreur'),
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion : $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getParentDashboard() async {
+    final url = Uri.parse('$baseUrl/parent/dashboard');
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success' || data['success'] == true) {
+          final parsed = ParentDashboardResponse.fromJson(data);
+          return {'success': true, 'data': parsed};
+        } else {
+          return {'success': false, 'message': data['message'] ?? 'Erreur inconnue'};
+        }
+      } else {
+        return {'success': false, 'message': 'Erreur serveur: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion : $e'};
+    }
+  }
+
+  Future<void> parentLogout() async {
+    final url = Uri.parse('$baseUrl/parent/logout');
+    try {
+      final headers = await _getHeaders();
+      await http.post(url, headers: headers);
+    } catch (e) {
+      // ignore
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('user_role');
+    await prefs.remove('parent_name');
+    await prefs.remove('parent_email');
+    await prefs.remove('parent_phone');
   }
 }
