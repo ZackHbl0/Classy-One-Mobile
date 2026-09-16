@@ -51,7 +51,12 @@ class AuthService {
         }),
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 429) {
+        return {
+          'success': false,
+          'message': 'Trop de tentatives de connexion. Pour votre sécurité, veuillez patienter une minute.',
+        };
+      } else if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         // Laravel auth returns status 'success' (string) or success true
@@ -568,7 +573,12 @@ class AuthService {
       );
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && (data['status'] == 'success' || data['success'] == true)) {
+      if (response.statusCode == 429) {
+        return {
+          'success': false,
+          'message': 'Trop de tentatives de connexion. Pour votre sécurité, veuillez patienter une minute.',
+        };
+      } else if (response.statusCode == 200 && (data['status'] == 'success' || data['success'] == true)) {
         final prefs = await SharedPreferences.getInstance();
         if (data['token'] != null) {
           await prefs.setString('auth_token', data['token']);

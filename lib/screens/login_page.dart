@@ -649,7 +649,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialCard({
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
@@ -673,7 +673,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 18),
+            icon is IconData ? Icon(icon, color: color, size: 18) : FaIcon(icon, color: color, size: 18),
             const SizedBox(height: 6),
             Text(
               label,

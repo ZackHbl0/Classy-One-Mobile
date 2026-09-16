@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/parent_dashboard_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/modern_nav_bar.dart';
 import 'login_page.dart';
+import 'parent_notifications_page.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
   const ParentDashboardScreen({super.key});
@@ -18,7 +23,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   String? _errorMessage;
   ParentDashboardResponse? _dashboardData;
   int _selectedChildIndex = 0;
+  int _currentKpiIndex = 0;
   int _currentNavIndex = 0;
+  final Set<String> _readNotificationIds = {};
 
   // Documents state
   List<dynamic> _documentRequests = [];
@@ -59,7 +66,21 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _loadReadNotifications();
     _fetchData();
+  }
+
+  Future<void> _loadReadNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('parent_read_notifs') ?? [];
+    setState(() {
+      _readNotificationIds.addAll(saved);
+    });
+  }
+
+  Future<void> _saveReadNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('parent_read_notifs', _readNotificationIds.toList());
   }
 
   Future<void> _fetchData() async {
@@ -356,7 +377,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
         children: [
-          _buildTopHeader(parent, isDark),
+          _buildTopHeader(parent, activeChild, isDark),
           const SizedBox(height: 16),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -389,7 +410,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Présences & Absences', Icons.event_busy, isDark),
+          _buildTabHeader('Présences & Absences', 'Suivi de l\'assiduité', Icons.event_busy, const Color(0xFFEF4444), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -577,7 +598,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Notes & Évaluations', Icons.school_outlined, isDark),
+          _buildTabHeader('Notes & Évaluations', 'Résultats académiques', Icons.school_outlined, const Color(0xFF6366F1), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -825,7 +846,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Documents Scolaires', Icons.description_outlined, isDark),
+          _buildTabHeader('Documents Scolaires', 'Demandes et attestations', Icons.description_outlined, const Color(0xFF14B8A6), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 18),
@@ -1211,17 +1232,18 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   void _showNewDocumentModal(ChildData activeChild) {
-    String selectedType = 'Certificat de scolarité';
-    String selectedUrgency = 'Normale';
-    final commentsController = TextEditingController();
+    String selectedDocType = 'Certificat de scolarité';
+    String selectedUrgency = 'normal';
+    final reasonController = TextEditingController();
     bool isSubmitting = false;
 
-    final List<String> documentTypes = [
-      'Certificat de scolarité',
-      'Relevé de notes',
-      'Attestation d\'inscription',
-      'Attestation de réussite',
-      'Autre document administratif',
+    final List<Map<String, dynamic>> docTypes = [
+      {'label': 'Certificat de scolarité',  'icon': Icons.school_outlined,           'color': const Color(0xFF10B981)},
+      {'label': 'Relevé de notes',          'icon': Icons.description_outlined,      'color': const Color(0xFF6366F1)},
+      {'label': 'Attestation de scolarité', 'icon': Icons.assignment_outlined,       'color': const Color(0xFF8B5CF6)},
+      {'label': 'Convention de stage',      'icon': Icons.work_outline_rounded,      'color': const Color(0xFFF59E0B)},
+      {'label': 'Attestation de présence',  'icon': Icons.co_present_outlined,       'color': const Color(0xFFEF4444)},
+      {'label': 'Autre document',           'icon': Icons.insert_drive_file_outlined,'color': const Color(0xFF14B8A6)},
     ];
 
     showModalBottomSheet(
@@ -1232,252 +1254,606 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final isDark = Theme.of(context).brightness == Brightness.dark;
-            final modalBg = isDark ? const Color(0xFF1C241C) : Colors.white;
+            final modalBg = isDark ? const Color(0xFF141914) : const Color(0xFFF8FAF9);
+            final cardBg = isDark ? const Color(0xFF1E2620) : Colors.white;
+            final textDark = isDark ? Colors.white : const Color(0xFF0F172A);
 
             return Container(
-              padding: EdgeInsets.only(
-                top: 24,
-                left: 24,
-                right: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
+              height: MediaQuery.of(context).size.height * 0.92,
               decoration: BoxDecoration(
                 color: modalBg,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 25,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 44,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 44,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 18),
+                  ),
+                  const SizedBox(height: 12),
 
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: primaryGreen.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.note_add_outlined, color: primaryGreen, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Demande de Document',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 4,
+                        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Top Gradient Hero Banner (matching img2) ──
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF0284C7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0284C7).withOpacity(0.25),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
                                 ),
-                              ),
-                              Text(
-                                'Pour : ${activeChild.details.nomComplet} (${activeChild.details.classe})',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-
-                    Text(
-                      'Type de document officiel *',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white70 : const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF263026) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: primaryGreen.withOpacity(0.2)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedType,
-                          isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: primaryGreen),
-                          dropdownColor: isDark ? const Color(0xFF1C241C) : Colors.white,
-                          items: documentTypes.map((type) {
-                            return DropdownMenuItem<String>(
-                              value: type,
-                              child: Text(
-                                type,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setModalState(() => selectedType = val);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    Text(
-                      'Degré d\'urgence',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white70 : const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: ['Normale', 'Urgente'].map((urg) {
-                        final isSel = selectedUrgency == urg;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: ChoiceChip(
-                            label: Text(urg),
-                            selected: isSel,
-                            selectedColor: urg == 'Urgente' ? Colors.red.shade400 : primaryGreen,
-                            labelStyle: TextStyle(
-                              color: isSel ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              ],
                             ),
-                            backgroundColor: isDark ? const Color(0xFF263026) : const Color(0xFFF1F5F9),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            onSelected: (_) {
-                              setModalState(() => selectedUrgency = urg);
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 18),
-
-                    Text(
-                      'Motif ou précisions (optionnel)',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white70 : const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: commentsController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Ex: Pour constitution de dossier d\'assurance, visa, etc.',
-                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF263026) : const Color(0xFFF1F5F9),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.all(14),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                setModalState(() => isSubmitting = true);
-                                final result = await _authService.createParentDocumentRequest(
-                                  studentId: activeChild.details.idStudent,
-                                  documentType: selectedType,
-                                  reason: commentsController.text.trim(),
-                                  comments: commentsController.text.trim(),
-                                  urgency: selectedUrgency,
-                                );
-                                setModalState(() => isSubmitting = false);
-
-                                if (!context.mounted) return;
-
-                                if (result['success'] == true) {
-                                  Navigator.pop(ctx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Icon(
+                                        Icons.note_add_outlined,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              result['message'] ?? 'Votre demande a été soumise avec succès !',
-                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                          Text(
+                                            'Nouvelle demande',
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontSize: 19,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            'Pour : ${activeChild.details.nomComplet}',
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white.withOpacity(0.92),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      backgroundColor: primaryGreen,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     ),
-                                  );
-                                  _fetchDocuments(activeChild.details.idStudent);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(result['message'] ?? 'Erreur lors de la création de la demande.'),
-                                      backgroundColor: Colors.red,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryGreen,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                              )
-                            : const Text(
-                                'Envoyer la demande',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  ],
+                                ),
+                                const SizedBox(height: 18),
+                                Row(
+                                  children: [
+                                    _buildDocStatBadge(Icons.access_time_rounded, 'Délai', '24h'),
+                                    const SizedBox(width: 8),
+                                    _buildDocStatBadge(Icons.sell_outlined, 'Coût', 'Gratuit'),
+                                    const SizedBox(width: 8),
+                                    _buildDocStatBadge(Icons.trending_up_rounded, 'Réussite', '98%'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // ── Form Container Card ──
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.025),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ── 1. Type de document ──
+                                Text(
+                                  '1. Type de document',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: textDark,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: EdgeInsets.zero,
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                    childAspectRatio: 2.3,
+                                  ),
+                                  itemCount: docTypes.length,
+                                  itemBuilder: (context, index) {
+                                    final item = docTypes[index];
+                                    final isSelected = selectedDocType == item['label'];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        setModalState(() => selectedDocType = item['label'] as String);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? Colors.white.withOpacity(0.03) : Colors.white,
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xFF10B981)
+                                                : (isDark ? Colors.white12 : const Color(0xFFF1F5F9)),
+                                            width: isSelected ? 1.8 : 1,
+                                          ),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: const Color(0xFF10B981).withOpacity(0.12),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 3),
+                                                  )
+                                                ]
+                                              : [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.015),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  )
+                                                ],
+                                        ),
+                                        child: Stack(
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(7),
+                                                  decoration: BoxDecoration(
+                                                    color: (item['color'] as Color).withOpacity(0.12),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(
+                                                    item['icon'] as IconData,
+                                                    color: item['color'] as Color,
+                                                    size: 17,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    item['label'] as String,
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 11.5,
+                                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                                      color: textDark,
+                                                      height: 1.25,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (isSelected)
+                                              Positioned(
+                                                top: 0,
+                                                right: 0,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(2.5),
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFF10B981),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.check,
+                                                    size: 9,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                                const SizedBox(height: 26),
+
+                                // ── 2. Niveau d'urgence ──
+                                Text(
+                                  '2. Niveau d\'urgence',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: textDark,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          setModalState(() => selectedUrgency = 'normal');
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: selectedUrgency == 'normal'
+                                                ? (isDark ? const Color(0xFF1B3524) : const Color(0xFFECFDF5))
+                                                : (isDark ? Colors.white.withOpacity(0.02) : Colors.white),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: selectedUrgency == 'normal'
+                                                  ? const Color(0xFF10B981)
+                                                  : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                              width: selectedUrgency == 'normal' ? 1.8 : 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.check_circle_outline_rounded,
+                                                    size: 18,
+                                                    color: selectedUrgency == 'normal'
+                                                        ? const Color(0xFF10B981)
+                                                        : const Color(0xFF94A3B8),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'Normal',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: selectedUrgency == 'normal'
+                                                          ? (isDark ? Colors.white : const Color(0xFF047857))
+                                                          : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Traitement standard',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  color: const Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          setModalState(() => selectedUrgency = 'urgent');
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: selectedUrgency == 'urgent'
+                                                ? (isDark ? const Color(0xFF381C1C) : const Color(0xFFFEF2F2))
+                                                : (isDark ? Colors.white.withOpacity(0.02) : Colors.white),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: selectedUrgency == 'urgent'
+                                                  ? const Color(0xFFEF4444)
+                                                  : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                              width: selectedUrgency == 'urgent' ? 1.8 : 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.bolt_rounded,
+                                                    size: 18,
+                                                    color: selectedUrgency == 'urgent'
+                                                        ? const Color(0xFFEF4444)
+                                                        : const Color(0xFF94A3B8),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'Urgent',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: selectedUrgency == 'urgent'
+                                                          ? (isDark ? Colors.white : const Color(0xFFB91C1C))
+                                                          : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Traitement prioritaire',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  color: const Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 26),
+
+                                // ── 3. Motif (Optionnel) ──
+                                Text(
+                                  '3. Motif (Optionnel)',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: textDark,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                TextField(
+                                  controller: reasonController,
+                                  maxLength: 500,
+                                  maxLines: 4,
+                                  onChanged: (_) => setModalState(() {}),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13.5,
+                                    color: textDark,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Expliquez brièvement le motif de votre demande...',
+                                    hintStyle: GoogleFonts.inter(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 13,
+                                    ),
+                                    prefixIcon: const Padding(
+                                      padding: EdgeInsets.only(bottom: 56),
+                                      child: Icon(
+                                        Icons.edit_note_rounded,
+                                        color: Color(0xFF10B981),
+                                        size: 22,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark ? Colors.white.withOpacity(0.02) : Colors.white,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(
+                                        color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(
+                                        color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF10B981),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    counterStyle: GoogleFonts.inter(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 26),
+
+                                // ── Submit Gradient Button ──
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 52,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF10B981), Color(0xFF0284C7)],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF0284C7).withOpacity(0.3),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: isSubmitting
+                                          ? null
+                                          : () async {
+                                              HapticFeedback.mediumImpact();
+                                              setModalState(() => isSubmitting = true);
+                                              final result = await _authService.createParentDocumentRequest(
+                                                studentId: activeChild.details.idStudent,
+                                                documentType: selectedDocType,
+                                                reason: reasonController.text.trim(),
+                                                comments: reasonController.text.trim(),
+                                                urgency: selectedUrgency == 'urgent' ? 'Urgente' : 'Normale',
+                                              );
+                                              setModalState(() => isSubmitting = false);
+
+                                              if (!context.mounted) return;
+
+                                              if (result['success'] == true) {
+                                                Navigator.pop(ctx);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Row(
+                                                      children: [
+                                                        const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                                        const SizedBox(width: 10),
+                                                        Expanded(
+                                                          child: Text(
+                                                            result['message'] ?? 'Votre demande a été soumise avec succès !',
+                                                            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    backgroundColor: primaryGreen,
+                                                    behavior: SnackBarBehavior.floating,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  ),
+                                                );
+                                                _fetchDocuments(activeChild.details.idStudent);
+                                              } else {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      result['message'] ?? 'Erreur lors de la création de la demande.',
+                                                      style: GoogleFonts.inter(),
+                                                    ),
+                                                    backgroundColor: Colors.red,
+                                                    behavior: SnackBarBehavior.floating,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        elevation: 0,
+                                      ),
+                                      child: isSubmitting
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                            )
+                                          : Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  'ENVOYER LA DEMANDE',
+                                                  style: GoogleFonts.inter(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: 0.8,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildDocStatBadge(IconData icon, String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 15),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 10),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1529,7 +1905,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Frais de scolarité & Paiements', Icons.credit_card_outlined, isDark),
+          _buildTabHeader('Frais & Paiements', 'Situation financière', Icons.credit_card_outlined, const Color(0xFFF59E0B), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -1786,7 +2162,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   // REUSABLE DASHBOARD WIDGETS
   // =============================================================
 
-  Widget _buildTopHeader(ParentInfo? parent, bool isDark) {
+  Widget _buildTopHeader(ParentInfo? parent, ChildData activeChild, bool isDark) {
+    final parentInitial = (parent?.name.isNotEmpty == true) ? parent!.name[0].toUpperCase() : 'M';
+    final parentName = (parent?.name.isNotEmpty == true) ? parent!.name : 'Mohammed Alami';
+
+    final notifications = _getNotifications(activeChild);
+    final unreadCount = notifications.where((n) => !_readNotificationIds.contains(n.id)).length;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1795,28 +2177,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             Container(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryGreen, accentGreen],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF134E35),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryGreen.withOpacity(0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Center(
                 child: Text(
-                  parent?.name.isNotEmpty == true ? parent!.name[0].toUpperCase() : 'P',
+                  parentInitial,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 20,
                   ),
                 ),
               ),
@@ -1828,16 +2199,16 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 Text(
                   'Bienvenue,',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  parent?.name.isNotEmpty == true ? parent!.name : 'Parent d\'élève',
+                  parentName,
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                     letterSpacing: -0.3,
@@ -1847,115 +2218,342 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             ),
           ],
         ),
-        IconButton(
-          onPressed: _logout,
-          tooltip: 'Déconnexion',
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+        Row(
+          children: [
+            // ── Modern Notification Bell Button with Badge ──
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _openNotificationCenter(notifications, activeChild.details.nomComplet),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E2B22) : const Color(0xFFF1F8F5),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? primaryGreen.withOpacity(0.3) : const Color(0xFFD1E7DD),
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Center(
+                        child: Icon(
+                          Icons.notifications_outlined,
+                          size: 22,
+                          color: isDark ? Colors.white : primaryGreen,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF141914) : Colors.white,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFEF4444).withOpacity(0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-            child: const Icon(Icons.logout, size: 18, color: Color(0xFFEF4444)),
-          ),
+            const SizedBox(width: 8),
+
+            // ── Logout Button ──
+            InkWell(
+              onTap: _logout,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A1E1E) : const Color(0xFFFFF0F0),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? Colors.red.withOpacity(0.2) : const Color(0xFFFFE4E6),
+                    width: 1,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.exit_to_app_rounded,
+                    size: 20,
+                    color: Color(0xFFEF5350),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildTabHeader(String title, IconData icon, bool isDark) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: primaryGreen.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: primaryGreen, size: 22),
+  // ── Extract all dynamic notifications for active child ──
+  List<ParentNotificationItem> _getNotifications(ChildData activeChild) {
+    final List<ParentNotificationItem> items = [];
+
+    // 1. Absences
+    for (final abs in activeChild.attendance.history) {
+      final id = 'abs_${abs.id}';
+      items.add(
+        ParentNotificationItem(
+          id: id,
+          title: abs.isJustified ? 'Absence justifiée' : 'Absence enregistrée',
+          message: '${abs.matiere} • ${abs.seance} (${abs.professeur})',
+          time: abs.dateFormatted ?? abs.date ?? 'Récemment',
+          category: 'Absence',
+          icon: Icons.event_busy_rounded,
+          color: const Color(0xFFEF4444),
+          bgColor: const Color(0xFFFEF2F2),
+          targetTabIndex: 1, // Absences tab
+          isUnread: !_readNotificationIds.contains(id),
         ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
-            letterSpacing: -0.3,
-          ),
+      );
+    }
+
+    // 2. Notes
+    for (final grade in activeChild.grades.list) {
+      final id = 'grade_${grade.id}';
+      items.add(
+        ParentNotificationItem(
+          id: id,
+          title: 'Nouvelle note : ${grade.subjectName}',
+          message: 'Note : ${grade.noteFormatted}/20 (${grade.type}) • ${grade.teacherName}',
+          time: grade.examDateFormatted ?? grade.examDate ?? 'Ce semestre',
+          category: 'Note',
+          icon: Icons.school_rounded,
+          color: const Color(0xFF10B981),
+          bgColor: const Color(0xFFECFDF5),
+          targetTabIndex: 2, // Notes tab
+          isUnread: !_readNotificationIds.contains(id),
         ),
-      ],
+      );
+    }
+
+    // 3. Documents
+    for (int i = 0; i < _documentRequests.length; i++) {
+      final doc = _documentRequests[i];
+      if (doc is Map) {
+        final docId = doc['id']?.toString() ?? 'doc_$i';
+        final id = 'doc_$docId';
+        final docTitle = doc['type_document'] ?? doc['titre'] ?? 'Document scolaire';
+        final status = doc['statut'] ?? doc['status'] ?? 'En attente';
+        items.add(
+          ParentNotificationItem(
+            id: id,
+            title: 'Statut Document : $docTitle',
+            message: 'Statut actuel : $status',
+            time: doc['created_at']?.toString() ?? 'Récemment',
+            category: 'Document',
+            icon: Icons.description_rounded,
+            color: const Color(0xFF8B5CF6),
+            bgColor: const Color(0xFFF5F3FF),
+            targetTabIndex: 3, // Documents tab
+            isUnread: !_readNotificationIds.contains(id),
+          ),
+        );
+      }
+    }
+
+    // 4. Avis & Annonces scolaires
+    for (final ann in activeChild.announcements) {
+      final id = 'ann_${ann.id}';
+      items.add(
+        ParentNotificationItem(
+          id: id,
+          title: ann.titre,
+          message: ann.message,
+          time: ann.dateRelative ?? ann.createdAt ?? 'Récemment',
+          category: 'Annonce',
+          icon: Icons.campaign_rounded,
+          color: const Color(0xFF3B82F6),
+          bgColor: const Color(0xFFEFF6FF),
+          targetTabIndex: 0, // Accueil tab
+          isUnread: !_readNotificationIds.contains(id),
+        ),
+      );
+    }
+
+    // 5. Paiements
+    for (final p in activeChild.payments.tranches) {
+      final id = 'pay_${p.id}';
+      items.add(
+        ParentNotificationItem(
+          id: id,
+          title: 'Échéance paiement : ${p.title}',
+          message: 'Montant : ${p.amount} • Statut : ${p.status}',
+          time: p.dueDate,
+          category: 'Paiement',
+          icon: Icons.credit_card_rounded,
+          color: const Color(0xFF0D9488),
+          bgColor: const Color(0xFFF0FDFA),
+          targetTabIndex: 4, // Paiements tab
+          isUnread: !_readNotificationIds.contains(id),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  // ── Open Dedicated Full-Screen Notification Center ──
+  void _openNotificationCenter(List<ParentNotificationItem> notifications, String childName) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ParentNotificationsPage(
+          childName: childName,
+          notifications: notifications,
+          readNotificationIds: _readNotificationIds,
+          onMarkAsRead: (id) {
+            setState(() => _readNotificationIds.add(id.toString()));
+            _saveReadNotifications();
+          },
+          onMarkAllAsRead: () {
+            setState(() {
+              for (final n in notifications) {
+                _readNotificationIds.add(n.id.toString());
+              }
+            });
+            _saveReadNotifications();
+          },
+          onNavigateToTab: (targetTabIndex) {
+            setState(() => _currentNavIndex = targetTabIndex);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabHeader(String title, String subtitle, IconData icon, Color accentColor, bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2B22) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : accentColor.withOpacity(0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(isDark ? 0.05 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Decorative background element
+          Positioned(
+            right: -10,
+            top: -10,
+            child: Icon(
+              icon,
+              size: 100,
+              color: accentColor.withOpacity(isDark ? 0.03 : 0.04),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accentColor.withOpacity(0.2),
+                      accentColor.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: accentColor.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDark ? Colors.white : accentColor,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildChildSelectorBar(List<ChildData> children, bool isDark) {
     if (children.length <= 1) {
-      final single = children[0].details;
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: primaryGreen.withOpacity(0.2), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: primaryGreen,
-              radius: 18,
-              child: Text(
-                single.prenom.isNotEmpty ? single.prenom[0].toUpperCase() : 'E',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${single.prenom} ${single.nom}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    '${single.classe} • Matricule : ${single.matricule}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: primaryGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Élève actif',
-                style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 11),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink(); // Hide the selector if only one child
     }
 
     return Column(
@@ -2057,14 +2655,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildHeroCard(ChildData child) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: primaryGreen, // Or gradient if preferred, but img2 looks like a solid or subtle gradient
         gradient: const LinearGradient(
-          colors: [primaryGreen, accentGreen],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [Color(0xFF19553D), Color(0xFF20664B)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: primaryGreen.withOpacity(0.3),
@@ -2075,19 +2674,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
       child: Row(
         children: [
+          // Avatar
           Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
             child: Center(
               child: Text(
@@ -2095,12 +2688,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 style: const TextStyle(
                   color: primaryGreen,
                   fontWeight: FontWeight.w900,
-                  fontSize: 24,
+                  fontSize: 22,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 16),
+          
+          // Infos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2114,21 +2709,72 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  child.details.classe,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
+                      ),
+                      child: Text(
+                        child.details.classe,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Matricule : ${child.details.matricule}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Badge: Élève actif
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981), // bright green dot
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withOpacity(0.8),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Matricule : ${child.details.matricule}',
+                const SizedBox(width: 6),
+                const Text(
+                  'Élève actif',
                   style: TextStyle(
+                    color: Colors.white,
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.6),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -2142,89 +2788,178 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildKpiRow(ChildData child, bool isDark) {
     final isUpToDate = child.payments.totalRemaining <= 0;
 
-    return Row(
+    String getMention(double moyenne) {
+      if (moyenne >= 16) return 'Très Bien';
+      if (moyenne >= 14) return 'Bien';
+      if (moyenne >= 12) return 'Assez Bien';
+      if (moyenne >= 10) return 'Passable';
+      return 'Insuffisant';
+    }
+
+    final List<Widget> slides = [
+      _buildNewKpiCard(
+        title: 'Moyenne',
+        value: '${child.grades.average.toStringAsFixed(1)}/20',
+        subtitle: 'Mention : ${getMention(child.grades.average)}',
+        badgeText: 'Favorable',
+        badgeColor: const Color(0xFF10B981),
+        icon: Icons.school,
+        iconBgColor: const Color(0xFFE8F3ED),
+        iconColor: primaryGreen,
+        isDark: isDark,
+      ),
+      _buildNewKpiCard(
+        title: 'Absences',
+        value: '${child.attendance.totalAbsences} séance(s)',
+        subtitle: 'Semestre en cours',
+        badgeText: child.attendance.totalAbsences > 0 ? 'Attention' : 'Excellent',
+        badgeColor: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        icon: Icons.event_busy,
+        iconBgColor: child.attendance.totalAbsences > 0 ? const Color(0xFFFDE8E8) : const Color(0xFFE8F3ED),
+        iconColor: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        isDark: isDark,
+      ),
+      _buildNewKpiCard(
+        title: 'Scolarité',
+        value: isUpToDate ? 'À jour' : '${child.payments.totalRemaining.toStringAsFixed(0)} MAD',
+        subtitle: 'Frais de scolarité',
+        badgeText: isUpToDate ? 'Réglé' : 'Impayé',
+        badgeColor: isUpToDate ? const Color(0xFF10B981) : Colors.orange,
+        icon: Icons.credit_card,
+        iconBgColor: isUpToDate ? const Color(0xFFE8F3ED) : const Color(0xFFFEF3C7),
+        iconColor: isUpToDate ? primaryGreen : Colors.orange,
+        isDark: isDark,
+      ),
+    ];
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildKpiCard(
-            title: 'Moyenne',
-            value: '${child.grades.average.toStringAsFixed(1)}/20',
-            icon: Icons.school_outlined,
-            color: primaryGreen,
-            isDark: isDark,
+        CarouselSlider(
+          items: slides,
+          options: CarouselOptions(
+            height: 110,
+            viewportFraction: 1.0,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 3),
+            onPageChanged: (index, reason) {
+              setState(() {
+                _currentKpiIndex = index;
+              });
+            },
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildKpiCard(
-            title: 'Absences',
-            value: '${child.attendance.totalAbsences} séance(s)',
-            icon: Icons.event_busy_outlined,
-            color: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-            isDark: isDark,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildKpiCard(
-            title: 'Scolarité',
-            value: isUpToDate ? 'À jour' : '${child.payments.totalRemaining.toStringAsFixed(0)} MAD',
-            icon: Icons.credit_card_outlined,
-            color: isUpToDate ? const Color(0xFF10B981) : Colors.orange,
-            isDark: isDark,
-          ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: slides.asMap().entries.map((entry) {
+            return Container(
+              width: _currentKpiIndex == entry.key ? 16.0 : 6.0,
+              height: 6.0,
+              margin: const EdgeInsets.symmetric(horizontal: 2.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3.0),
+                color: _currentKpiIndex == entry.key
+                    ? primaryGreen
+                    : (isDark ? Colors.white24 : Colors.grey.shade300),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildKpiCard({
+  Widget _buildNewKpiCard({
     required String title,
     required String value,
+    required String subtitle,
+    required String badgeText,
+    required Color badgeColor,
     required IconData icon,
-    required Color color,
+    required Color iconBgColor,
+    required Color iconColor,
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF1F2937) : Colors.white,
+        borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: isDark ? iconColor.withOpacity(0.2) : iconBgColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 20, color: color),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
-              fontWeight: FontWeight.w500,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : Colors.grey.shade600,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? badgeColor.withOpacity(0.2) : badgeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: TextStyle(
+                          color: badgeColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white54 : Colors.grey.shade500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -2355,82 +3090,165 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Modern Header
         Row(
           children: [
-            const Icon(Icons.campaign_outlined, size: 18, color: primaryGreen),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.campaign, size: 18, color: primaryGreen),
+            ),
+            const SizedBox(width: 12),
             Text(
               'Avis & Annonces scolaires',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF111827),
+                letterSpacing: -0.3,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        
+        // Announcements List
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: announcements.take(3).length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, i) {
             final ann = announcements[i];
+            
+            // Determine category based on title
+            final String titleLower = ann.titre.toLowerCase();
+            IconData iconData = Icons.notifications_none;
+            Color iconColor = primaryGreen;
+            Color iconBg = primaryGreen.withOpacity(0.1);
+            
+            if (titleLower.contains('événement') || titleLower.contains('event')) {
+              iconData = Icons.event;
+              iconColor = const Color(0xFF3B82F6); // Blue
+              iconBg = const Color(0xFFEFF6FF);
+            } else if (titleLower.contains('urgent') || titleLower.contains('attention') || titleLower.contains('alerte')) {
+              iconData = Icons.warning_amber_rounded;
+              iconColor = const Color(0xFFEF4444); // Red
+              iconBg = const Color(0xFFFEF2F2);
+            } else if (titleLower.contains('succès') || titleLower.contains('félicitations')) {
+              iconData = Icons.emoji_events_outlined;
+              iconColor = const Color(0xFFF59E0B); // Orange/Gold
+              iconBg = const Color(0xFFFFFBEB);
+            }
+
+            if (isDark) {
+              iconBg = iconColor.withOpacity(0.2);
+            }
+
+            final bool isUnread = i == 0; // Simulate unread for the first item for SaaS feel
+
             return Container(
-              padding: const EdgeInsets.all(16),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                color: isDark ? const Color(0xFF1F2937) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
+                  width: 1,
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3)),
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
                 ],
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: primaryGreen.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Left border accent stripe for unread
+                    Container(
+                      width: 4,
+                      color: isUnread ? iconColor : Colors.transparent,
                     ),
-                    child: const Icon(Icons.notifications_none, size: 20, color: primaryGreen),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Dynamic Icon
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: iconBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(iconData, size: 22, color: iconColor),
+                            ),
+                            const SizedBox(width: 14),
+                            
+                            // Content
                             Expanded(
-                              child: Text(
-                                ann.titre,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          ann.titre,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (ann.dateRelative != null && ann.dateRelative!.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8.0, top: 2.0),
+                                          child: Text(
+                                            ann.dateRelative!,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    ann.message,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                            if (ann.dateRelative != null && ann.dateRelative!.isNotEmpty)
-                              Text(
-                                ann.dateRelative!,
-                                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
-                              ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          ann.message,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

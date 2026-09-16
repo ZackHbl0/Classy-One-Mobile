@@ -64,35 +64,52 @@ class GlobalAppHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => const Size.fromHeight(64);
 
   // ───────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      color: Colors.transparent,
-      child: SafeArea(
-        bottom: false,
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         child: Container(
-          height: 56,
-          padding: padding,
+          height: 56.0,
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1F2922) : Colors.white,
+            borderRadius: BorderRadius.circular(18.0),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.3)
+                    : const Color(0xFF0F172A).withOpacity(0.05),
+                blurRadius: 16.0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // ── Left: Profile Avatar / Sidebar Trigger ──
               SizedBox(
-                width: 44,
-                height: 44,
+                width: 42,
+                height: 42,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: ((showBackButton ?? false) == true)
                       ? _ActionButton(
                           child: Icon(
-                            Icons.arrow_back_ios_new,
-                            size: 18,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 17,
+                            color: isDark ? Colors.white : const Color(0xFF1E293B),
                           ),
                           onTap: () {
                             if (Navigator.canPop(context)) {
@@ -100,50 +117,73 @@ class GlobalAppHeader extends StatelessWidget implements PreferredSizeWidget {
                             }
                           },
                         )
-                      : GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
-                              Scaffold.of(context).openDrawer();
-                            } else {
-                              MainScreen.scaffoldKey.currentState?.openDrawer();
-                            }
-                          },
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            color: Colors.transparent, // to increase tap target
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 2.5,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
+                      : Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              if (Scaffold.maybeOf(context)?.hasDrawer ?? false) {
+                                Scaffold.of(context).openDrawer();
+                              } else {
+                                MainScreen.scaffoldKey.currentState?.openDrawer();
+                              }
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.06)
+                                    : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.08)
+                                      : const Color(0xFFE2E8F0),
+                                  width: 1,
                                 ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  width: 16,
-                                  height: 2.5,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 2.2,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3.5),
+                                    Container(
+                                      width: 12,
+                                      height: 2.2,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3.5),
+                                    Container(
+                                      width: 16,
+                                      height: 2.2,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  width: 24,
-                                  height: 2.5,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -155,47 +195,62 @@ class GlobalAppHeader extends StatelessWidget implements PreferredSizeWidget {
                 child: (pageTitle != null && pageTitle!.isNotEmpty)
                     ? _PageTitle(title: pageTitle!, isDark: isDark)
                     : Center(
-                        child: Image.asset(
-                          'assets/images/classyone_icon.png',
-                          height: 56,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark
+                                ? Colors.white.withOpacity(0.04)
+                                : const Color(0xFF10B981).withOpacity(0.06),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withOpacity(0.18),
+                              width: 1,
+                            ),
+                          ),
+                          child: Image.asset(
+                            'assets/images/classyone_icon.png',
+                            height: 34,
+                            width: 34,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
               ),
 
               // ── Right: Action Notification ──
               SizedBox(
-                width: 44,
-                height: 44,
+                width: 42,
+                height: 42,
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: ((showNotification ?? true) == true)
                       ? Container(
-                          width: 42,
-                          height: 42,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: isDark
-                                    ? Colors.black26
-                                    : Theme.of(context).primaryColor.withOpacity(0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: isDark
+                                ? Colors.white.withOpacity(0.06)
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.08)
+                                  : const Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
                           ),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(50),
+                              borderRadius: BorderRadius.circular(12),
                               onTap: onNotificationTap ??
                                   () {
                                     HapticFeedback.lightImpact();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (_) => const NotificationsPage()),
+                                          builder: (_) =>
+                                              const NotificationsPage()),
                                     );
                                   },
                               child: Center(
@@ -398,33 +453,52 @@ class _NotifIcon extends StatelessWidget {
         final hasUnread = provider.unreadCount > 0;
         return Stack(
           clipBehavior: Clip.none,
+          alignment: Alignment.center,
           children: [
             Icon(
               Icons.notifications_none_rounded,
-              color: isDark ? Colors.white70 : const Color(0xFF475569),
-              size: 22,
+              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+              size: 21,
             ),
             if (hasUnread)
               Positioned(
-                top: -4,
-                right: -4,
+                top: -3,
+                right: -3,
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
-                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+                      color: isDark ? const Color(0xFF1F2922) : Colors.white,
                       width: 1.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withOpacity(0.4),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    provider.unreadCount > 99 ? '99+' : provider.unreadCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      height: 1,
+                  child: Center(
+                    child: Text(
+                      provider.unreadCount > 99 ? '99+' : provider.unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),

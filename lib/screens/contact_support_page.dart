@@ -503,7 +503,7 @@ class ContactSupportPage extends StatelessWidget {
   Widget _buildContactCard({
     required String title,
     required String subtitle,
-    required IconData icon,
+    required dynamic icon,
     required Color iconColor,
     required Color iconBgColor,
     required String badgeText,
@@ -548,7 +548,7 @@ class ContactSupportPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: iconColor, size: 24),
+                  child: icon is IconData ? Icon(icon, color: iconColor, size: 24) : FaIcon(icon, color: iconColor, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
