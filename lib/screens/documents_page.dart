@@ -319,7 +319,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
     Color dotColor = const Color(0xFF6366F1); // Blue default
     if (status == 'En attente') dotColor = const Color(0xFFF59E0B);
-    if (status == 'Prêt') dotColor = const Color(0xFF10B981);
+    if (status == 'Prêt' || status.toLowerCase() == 'ready' || status.toLowerCase() == 'disponible') dotColor = const Color(0xFF10B981);
     if (status == 'Rejeté') dotColor = const Color(0xFFEF4444);
 
     return IntrinsicHeight(
@@ -378,7 +378,11 @@ class _DocumentsPageState extends State<DocumentsPage> {
           const SizedBox(width: 8),
           // Card
           Expanded(
-            child: _buildRequestCard(req, isDark, dotColor, status, dateStr),
+            child: InkWell(
+              onTap: () => _showRequestDetail(req),
+              borderRadius: BorderRadius.circular(20),
+              child: _buildRequestCard(req, isDark, dotColor, status, dateStr),
+            ),
           ),
         ],
       ),
@@ -528,6 +532,36 @@ class _DocumentsPageState extends State<DocumentsPage> {
                     ),
                   ],
                 ),
+                Builder(
+                  builder: (context) {
+                    final String readyDateFormatted = _formatReadyDate(req['ready_date']);
+                    if (readyDateFormatted.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.event_available_rounded,
+                            size: 13,
+                            color: Color(0xFF10B981),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              'Disponible le : $readyDateFormatted',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF10B981),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -671,6 +705,16 @@ class _DocumentsPageState extends State<DocumentsPage> {
         ],
       ),
     );
+  }
+
+  String _formatReadyDate(dynamic raw) {
+    if (raw == null) return '';
+    try {
+      final parsed = DateTime.parse(raw.toString().replaceAll(' ', 'T'));
+      return "${DateFormat('dd/MM/yyyy').format(parsed)} à ${DateFormat('HH:mm').format(parsed)}";
+    } catch (_) {
+      return raw.toString();
+    }
   }
 
   void _showRequestDetail(dynamic req) {

@@ -185,7 +185,13 @@ class AuthService {
 
     // Always clear the token locally
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    // Clear parent-specific read notifications before removing email
+    final email = prefs.getString('parent_email') ?? '';
+    if (email.isNotEmpty) {
+      await prefs.remove('parent_read_notifs_' + email);
+    }
+    await prefs.remove('parent_read_notifs_default');
+        await prefs.remove('auth_token');
   }
 
   Future<Map<String, dynamic>> getDashboardData(int idStudent) async {
@@ -654,7 +660,7 @@ class AuthService {
           'document_type': documentType,
           'reason': finalReason,
           'comments': finalReason,
-          'urgency': urgency,
+          'urgency': urgency.toLowerCase().startsWith('urg') ? 'urgent' : 'normal',
         }),
       );
       final data = jsonDecode(response.body);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/parent_dashboard_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/modern_nav_bar.dart';
+import '../widgets/document_detail_sheet.dart';
 import 'login_page.dart';
 import 'parent_notifications_page.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -72,15 +74,22 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Future<void> _loadReadNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('parent_read_notifs') ?? [];
-    setState(() {
-      _readNotificationIds.addAll(saved);
-    });
+    // Use parent-specific key based on email to isolate between parents
+    final email = prefs.getString('parent_email') ?? '';
+    final specificKey = 'parent_read_notifs_${email.isNotEmpty ? email : "default"}';
+    final specificIds = prefs.getStringList(specificKey) ?? [];
+    if (mounted) {
+      setState(() {
+        _readNotificationIds.addAll(specificIds);
+      });
+    }
   }
 
   Future<void> _saveReadNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('parent_read_notifs', _readNotificationIds.toList());
+    final email = prefs.getString('parent_email') ?? '';
+    final specificKey = 'parent_read_notifs_${email.isNotEmpty ? email : "default"}';
+    await prefs.setStringList(specificKey, _readNotificationIds.toList());
   }
 
   Future<void> _fetchData() async {
@@ -410,7 +419,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Présences & Absences', 'Suivi de l\'assiduité', Icons.event_busy, const Color(0xFFEF4444), isDark),
+          _buildTabHeader('Absences', '', Icons.event_busy, const Color(0xFFEF4444), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -598,7 +607,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Notes & Évaluations', 'Résultats académiques', Icons.school_outlined, const Color(0xFF6366F1), isDark),
+          _buildTabHeader('Notes', '', Icons.school_outlined, const Color(0xFF6366F1), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -846,7 +855,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Documents Scolaires', 'Demandes et attestations', Icons.description_outlined, const Color(0xFF14B8A6), isDark),
+          _buildTabHeader('Documents', '', Icons.description_outlined, const Color(0xFF14B8A6), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 18),
@@ -1012,6 +1021,30 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
+  String _formatParentReadyDate(dynamic raw) {
+    if (raw == null) return '';
+    try {
+      final parsed = DateTime.parse(raw.toString().replaceAll(' ', 'T'));
+      return "${DateFormat('dd/MM/yyyy').format(parsed)} à ${DateFormat('HH:mm').format(parsed)}";
+    } catch (_) {
+      return raw.toString();
+    }
+  }
+
+  
+  void _showRequestDetail(dynamic doc) {
+    final Map<String, dynamic> mapReq = doc is Map<String, dynamic>
+        ? Map<String, dynamic>.from(doc)
+        : (doc is Map ? Map<String, dynamic>.from(doc) : <String, dynamic>{});
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DocumentDetailSheet(request: mapReq),
+    );
+  }
+
   Widget _buildDocumentCard(dynamic doc, bool isDark) {
     final String type = doc['document_type'] ?? 'Document Officiel';
     final String status = doc['status'] ?? 'En attente';
@@ -1021,6 +1054,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     final String? pdfUrl = doc['pdf_url'];
     final bool hasPdf = doc['has_pdf'] == true || (pdfUrl != null && pdfUrl.isNotEmpty);
     final String dateStr = doc['request_date'] ?? doc['created_at'] ?? '';
+    final String readyDateFormatted = _formatParentReadyDate(doc['ready_date']);
 
     Color statusColor;
     IconData statusIcon;
@@ -1045,7 +1079,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1057,176 +1090,223 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: primaryGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.description, color: primaryGreen, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showRequestDetail(doc),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      type,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                      child: const Icon(Icons.description, color: primaryGreen, size: 24),
                     ),
-                    const SizedBox(height: 4),
-                    if (dateStr.isNotEmpty)
-                      Row(
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey.shade500),
-                          const SizedBox(width: 5),
                           Text(
-                            'Demandé le : $dateStr',
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                            type,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
                           ),
+                          const SizedBox(height: 4),
+                          if (dateStr.isNotEmpty)
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey.shade500),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Demandé le : $dateStr',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
+                    ),
+                    if (urgency.toLowerCase() == 'urgente' || urgency.toLowerCase() == 'urgent') ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        ),
+                        child: const Text(
+                          'Urgente',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: isDark ? Colors.white38 : Colors.grey.shade400,
+                      size: 20,
+                    ),
                   ],
                 ),
-              ),
-              if (urgency.toLowerCase() == 'urgente' || urgency.toLowerCase() == 'urgent')
+                const SizedBox(height: 12),
+
+                // Status Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
-                    'Urgente',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 14, color: statusColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Date de disponibilité
+                if (readyDateFormatted.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
                     ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(statusIcon, size: 14, color: statusColor),
-                const SizedBox(width: 6),
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Remarks or Rejection Reason
-          if (comments != null && comments.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Motif / Note : $comments',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ],
-
-          if (rejectionReason != null && rejectionReason.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.red.withOpacity(0.2)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.info_outline, size: 14, color: Colors.red),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Motif du refus : $rejectionReason',
-                      style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.w500),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF10B981)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Disponible le : $readyDateFormatted',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
 
-          // Download PDF Action Button
-          if (hasPdf && (status == 'Prêt' || status == 'Disponible' || status == 'Validé' || status == 'ready')) ...[
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  if (pdfUrl != null && pdfUrl.isNotEmpty) {
-                    final uri = Uri.parse(pdfUrl);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } else {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Impossible d\'ouvrir le lien du document PDF.')),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text(
-                  'Télécharger le document PDF',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentGreen,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+                // Remarks or Rejection Reason
+                if (comments != null && comments.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Motif / Note : $comments',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+
+                if (rejectionReason != null && rejectionReason.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, size: 14, color: Colors.red),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Motif du refus : $rejectionReason',
+                            style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Download PDF Action Button
+                if (hasPdf && (status == 'Prêt' || status == 'Disponible' || status == 'Validé' || status == 'ready')) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (pdfUrl != null && pdfUrl.isNotEmpty) {
+                          final uri = Uri.parse(pdfUrl);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } else {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Impossible d\'ouvrir le lien du document PDF.')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.download_rounded, size: 18),
+                      label: const Text(
+                        'Télécharger le document PDF',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -1739,7 +1819,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                                                 documentType: selectedDocType,
                                                 reason: reasonController.text.trim(),
                                                 comments: reasonController.text.trim(),
-                                                urgency: selectedUrgency == 'urgent' ? 'Urgente' : 'Normale',
+                                                urgency: selectedUrgency == 'urgent' ? 'urgent' : 'normal',
                                               );
                                               setModalState(() => isSubmitting = false);
 
@@ -1905,7 +1985,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
         children: [
-          _buildTabHeader('Frais & Paiements', 'Situation financière', Icons.credit_card_outlined, const Color(0xFFF59E0B), isDark),
+          _buildTabHeader('Paiements', '', Icons.credit_card_outlined, const Color(0xFFF59E0B), isDark),
           const SizedBox(height: 14),
           _buildChildSelectorBar(children, isDark),
           const SizedBox(height: 20),
@@ -2464,86 +2544,177 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildTabHeader(String title, String subtitle, IconData icon, Color accentColor, bool isDark) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E2B22) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : accentColor.withOpacity(0.15),
+          color: accentColor.withOpacity(isDark ? 0.28 : 0.20),
           width: 1.5,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            accentColor.withOpacity(isDark ? 0.14 : 0.06),
+            isDark ? const Color(0xFF1E2B22) : Colors.white,
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(isDark ? 0.05 : 0.08),
-            blurRadius: 20,
+            color: accentColor.withOpacity(isDark ? 0.18 : 0.12),
+            blurRadius: 24,
             offset: const Offset(0, 8),
+            spreadRadius: -2,
+          ),
+          BoxShadow(
+            color: (isDark ? Colors.black : Colors.grey.shade400).withOpacity(isDark ? 0.25 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Stack(
+        alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          // Decorative background element
+          // Subtle glowing halo behind the icon
           Positioned(
-            right: -10,
             top: -10,
-            child: Icon(
-              icon,
-              size: 100,
-              color: accentColor.withOpacity(isDark ? 0.03 : 0.04),
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    accentColor.withOpacity(isDark ? 0.22 : 0.15),
+                    accentColor.withOpacity(0.0),
+                  ],
+                ),
+              ),
             ),
           ),
-          Row(
+          // Left watermark icon
+          Positioned(
+            left: -8,
+            bottom: -12,
+            child: Opacity(
+              opacity: isDark ? 0.04 : 0.04,
+              child: Icon(
+                icon,
+                size: 72,
+                color: accentColor,
+              ),
+            ),
+          ),
+          // Right watermark icon
+          Positioned(
+            right: -8,
+            top: -12,
+            child: Opacity(
+              opacity: isDark ? 0.04 : 0.04,
+              child: Icon(
+                icon,
+                size: 80,
+                color: accentColor,
+              ),
+            ),
+          ),
+          // Main centered content
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Glowing Icon Badge with double border and neon effect
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accentColor.withOpacity(isDark ? 0.40 : 0.28),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(isDark ? 0.30 : 0.20),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        accentColor.withOpacity(isDark ? 0.35 : 0.22),
+                        accentColor.withOpacity(isDark ? 0.12 : 0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: accentColor.withOpacity(0.35),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDark ? Colors.white : accentColor,
+                    size: 30,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Centered Title
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  letterSpacing: -0.4,
+                ),
+              ),
+              // Subtle gradient glow indicator bar under title
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 36,
+                height: 3.5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
                   gradient: LinearGradient(
                     colors: [
                       accentColor.withOpacity(0.2),
-                      accentColor.withOpacity(0.05),
+                      accentColor,
+                      accentColor.withOpacity(0.2),
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: accentColor.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDark ? Colors.white : accentColor,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
               ),
+              // Subtitle (if present)
+              if (subtitle.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
