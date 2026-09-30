@@ -26,21 +26,25 @@ class EventModel {
   });
 
   /// Derives the Laravel public/storage base URL from the API baseUrl.
-  /// e.g. "http://192.168.100.55/Classy-One/public/api"
-  ///   -> "http://192.168.100.55/Classy-One/public/storage/"
-  ///
-  /// This means image URLs automatically follow whatever IP is set in
-  /// AuthService.baseUrl — no hardcoded IPs anywhere.
+  /// e.g. "http://192.168.100.99:8000/api"
+  ///   -> "http://192.168.100.99:8000/storage/events/image.jpg"
   static String? _buildImageUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
+    if (path == null || path.trim().isEmpty) return null;
+    final cleanPath = path.trim();
 
-    // If the backend already returns a full URL (future-proofing), use it as-is.
-    if (path.startsWith('http')) return path;
+    // If the backend already returns a full URL, use it as-is.
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      return cleanPath;
+    }
 
-    // Strip trailing "/api" from baseUrl and append "/storage/<path>"
+    final normalizedPath = cleanPath
+        .replaceFirst(RegExp(r'^/?storage/'), '')
+        .replaceFirst(RegExp(r'^/'), '');
+
+    // Strip trailing "/api" or "/api/" from baseUrl and append "/storage/<path>"
     final storageBase =
-        AuthService.baseUrl.replaceAll(RegExp(r'/api$'), '/storage/');
-    return '$storageBase$path';
+        AuthService.baseUrl.replaceAll(RegExp(r'/api/?$'), '/storage/');
+    return '$storageBase$normalizedPath';
   }
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -60,4 +64,3 @@ class EventModel {
     );
   }
 }
-

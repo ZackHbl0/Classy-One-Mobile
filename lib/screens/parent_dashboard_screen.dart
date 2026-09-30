@@ -7,6 +7,8 @@ import '../models/parent_dashboard_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/modern_nav_bar.dart';
 import '../widgets/document_detail_sheet.dart';
+import '../utils/url_fixer.dart';
+import '../utils/content_router.dart';
 import 'login_page.dart';
 import 'parent_notifications_page.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -61,7 +63,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     NavBarItem(
       icon: Icons.credit_card_outlined,
       activeIcon: Icons.credit_card_rounded,
-      label: 'Paiements',
+      label: 'Paiement',
     ),
   ];
 
@@ -1277,15 +1279,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         if (pdfUrl != null && pdfUrl.isNotEmpty) {
-                          final uri = Uri.parse(pdfUrl);
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri, mode: LaunchMode.externalApplication);
-                          } else {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Impossible d\'ouvrir le lien du document PDF.')),
-                            );
-                          }
+                          final fixedUrl = UrlFixer.fixUrl(pdfUrl);
+                          await ContentRouter.routeContent(
+                            context,
+                            contentUrl: fixedUrl,
+                            contentTitle: doc['document_type'] ?? 'Document PDF',
+                          );
                         }
                       },
                       icon: const Icon(Icons.download_rounded, size: 18),
@@ -2826,9 +2825,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildHeroCard(ChildData child) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: primaryGreen, // Or gradient if preferred, but img2 looks like a solid or subtle gradient
+        color: primaryGreen,
         gradient: const LinearGradient(
           colors: [Color(0xFF19553D), Color(0xFF20664B)],
           begin: Alignment.centerLeft,
@@ -2837,18 +2836,19 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: primaryGreen.withOpacity(0.3),
+            color: primaryGreen.withValues(alpha: 0.3),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Avatar
           Container(
-            width: 52,
-            height: 52,
+            width: 50,
+            height: 50,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -2864,89 +2864,108 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           
           // Infos
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '${child.details.prenom} ${child.details.nom}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                // Line 1: Student Name + Status Badge
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
-                      ),
+                    Expanded(
                       child: Text(
-                        child.details.classe,
+                        '${child.details.prenom} ${child.details.nom}',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Matricule : ${child.details.matricule}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.7),
+                    // Badge: Élève actif
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.8),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Élève actif',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          
-          // Badge: Élève actif
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981), // bright green dot
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF10B981).withOpacity(0.8),
-                        blurRadius: 6,
-                        spreadRadius: 1,
+                const SizedBox(height: 6),
+                
+                // Line 2: Class tag + Matricule
+                Row(
+                  children: [
+                    if (child.details.classe.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.5),
+                        ),
+                        child: Text(
+                          child.details.classe,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
+                      const SizedBox(width: 8),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Élève actif',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    Flexible(
+                      child: Text(
+                        'Matricule : ${child.details.matricule}',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

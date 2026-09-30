@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import '../utils/url_fixer.dart';
 
 /// Full-screen in-app PDF viewer.
 /// Downloads and displays PDF files without leaving the app.
@@ -37,7 +39,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
     try {
       // Download PDF to local storage
-      final response = await http.get(Uri.parse(widget.pdfUrl));
+      final fixedUrl = UrlFixer.fixUrl(widget.pdfUrl);
+      final response = await http.get(Uri.parse(fixedUrl));
 
       if (response.statusCode == 200) {
         final dir = await getTemporaryDirectory();
@@ -83,10 +86,21 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF19553D),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.open_in_browser_rounded, color: Colors.white),
+            tooltip: 'Ouvrir en externe',
+            onPressed: () async {
+              final fixedUrl = UrlFixer.fixUrl(widget.pdfUrl);
+              final uri = Uri.parse(fixedUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
           if (totalPages > 0)
             Center(
               child: Padding(
@@ -141,7 +155,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Réessayer'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF19553D),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

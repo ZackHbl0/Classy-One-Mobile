@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
+import '../utils/url_fixer.dart';
+import '../utils/content_router.dart';
 
 class DocumentDetailSheet extends StatelessWidget {
   final Map<String, dynamic> request;
@@ -140,11 +142,14 @@ class DocumentDetailSheet extends StatelessWidget {
                             color: isDark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Demandé le : $dateStr',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                          Expanded(
+                            child: Text(
+                              'Demandé le : $dateStr',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -417,30 +422,28 @@ class DocumentDetailSheet extends StatelessWidget {
     final token = prefs.getString('auth_token') ?? '';
     final id = request['id'];
 
-    Uri url;
+    String resolvedUrl = '';
     if (directUrl != null && directUrl.isNotEmpty) {
-      if (directUrl.startsWith('http://') || directUrl.startsWith('https://')) {
-        url = Uri.parse(directUrl);
-      } else {
-        url = Uri.parse('${AuthService.baseUrl}$directUrl');
-      }
+      resolvedUrl = UrlFixer.fixUrl(directUrl);
     } else {
-      url = Uri.parse(
-        '${AuthService.baseUrl}/documents/$id/download?token=$token',
-      );
+      resolvedUrl = UrlFixer.fixUrl('${AuthService.baseUrl}/documents/$id/download?token=$token');
     }
 
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (context.mounted) {
+      if (!context.mounted) return;
+      await ContentRouter.routeContent(
+        context,
+        contentUrl: resolvedUrl,
+        contentTitle: request['document_type'] ?? 'Certificat de scolarité',
+      );
+    } catch (_) {
+      final uri = Uri.parse(resolvedUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Impossible d\'ouvrir le lien de téléchargement'),
+            content: Text('Impossible d\'ouvrir le document PDF'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

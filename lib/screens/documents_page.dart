@@ -4,6 +4,8 @@ import '../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/document_detail_sheet.dart';
+import '../utils/url_fixer.dart';
+import '../utils/content_router.dart';
 import 'package:flutter_application_1/screens/new_document_request_page.dart';
 import 'package:intl/intl.dart';
 import '../widgets/custom_sidebar.dart';
@@ -731,19 +733,24 @@ class _DocumentsPageState extends State<DocumentsPage> {
     final token = prefs.getString('auth_token') ?? '';
     final id = req['id'];
 
-    final String? pdfUrl = req['pdf_url'];
-    final url = Uri.parse(
-      pdfUrl != null && pdfUrl.isNotEmpty
-          ? '$pdfUrl?token=$token'
-          : '${AuthService.baseUrl}/documents/$id/download?token=$token',
-    );
+    final String? rawPdfUrl = req['pdf_url'];
+    final resolvedUrl = (rawPdfUrl != null && rawPdfUrl.isNotEmpty)
+        ? UrlFixer.fixUrl(rawPdfUrl)
+        : UrlFixer.fixUrl('${AuthService.baseUrl}/documents/$id/download?token=$token');
 
     try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted) {
+      await ContentRouter.routeContent(
+        context,
+        contentUrl: resolvedUrl,
+        contentTitle: req['document_type'] ?? 'Certificat de scolarité',
+      );
+    } catch (_) {
+      final url = Uri.parse(resolvedUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible d\'ouvrir le lien')),
+          const SnackBar(content: Text('Impossible d\'ouvrir le document')),
         );
       }
     }

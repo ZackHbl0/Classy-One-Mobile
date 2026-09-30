@@ -399,18 +399,18 @@ class _PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        color: isDark ? Colors.white : const Color(0xFF2D3A2D),
-      ) ?? GoogleFonts.inter(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: isDark ? Colors.white : const Color(0xFF2D3A2D),
-        letterSpacing: -0.4,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: isDark ? Colors.white : const Color(0xFF1E293B),
+          letterSpacing: -0.3,
+        ),
       ),
     );
   }

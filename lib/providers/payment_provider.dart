@@ -9,21 +9,27 @@ class PaymentProvider with ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
 
-  // Target amount as per requirements
-  final double _targetAmount = 15000.0;
+  // Target amount defaults to 15000.0 but dynamically loaded from student's frais_scolarite
+  double _targetAmount = 15000.0;
 
   Map<String, dynamic>? get paymentData => _paymentData;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
 
   double get totalPaid {
+    if (_paymentData != null && _paymentData!['total_paid'] != null) {
+      final parsed = double.tryParse(_paymentData!['total_paid'].toString());
+      if (parsed != null) return parsed;
+    }
+
     if (_paymentData == null || _paymentData!['tranches'] == null) return 0.0;
 
     double total = 0.0;
     final tranches = _paymentData!['tranches'] as List;
 
     for (var tranche in tranches) {
-      if (tranche['status'] == 'Payé') {
+      final status = (tranche['status'] ?? '').toString().toLowerCase();
+      if (status == 'payé' || status == 'paye' || status == 'payǸ') {
         // Amount is string like "1 500 MAD"
         String amountStr = (tranche['amount'] ?? '0')
             .toString()
@@ -62,6 +68,15 @@ class PaymentProvider with ChangeNotifier {
       final result = await _authService.getPaiement(idStudent);
       if (result['success'] == true) {
         _paymentData = result['data'];
+        if (_paymentData != null) {
+          final target = _paymentData!['target_amount'] ?? _paymentData!['frais_scolarite'];
+          if (target != null) {
+            final parsed = double.tryParse(target.toString());
+            if (parsed != null && parsed > 0) {
+              _targetAmount = parsed;
+            }
+          }
+        }
       } else {
         _errorMessage =
             result['message'] ?? 'Erreur lors du chargement des paiements';
@@ -75,13 +90,12 @@ class PaymentProvider with ChangeNotifier {
   }
 
   void updateFromDashboard(Map<String, dynamic> dashboardStats) {
-    // This allows quick sync from dashboard data if available
-    // But we prefer fetchPaymentData for full history
-    if (dashboardStats.containsKey('total_paye')) {
-      // Ensure we have a structure even if partial
-      _paymentData ??= {};
-      // total_paye in dashboard is numeric from my PHP change
-      // or it might be string if I formatted it. Better check.
+    if (dashboardStats.containsKey('frais_scolarite')) {
+      final parsed = double.tryParse(dashboardStats['frais_scolarite'].toString());
+      if (parsed != null && parsed > 0) {
+        _targetAmount = parsed;
+        notifyListeners();
+      }
     }
   }
 }
