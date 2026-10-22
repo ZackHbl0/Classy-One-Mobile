@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,8 @@ class ParentDashboardScreen extends StatefulWidget {
 }
 
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+  PageController? _kpiPageController;
+  Timer? _kpiTimer;
   final AuthService _authService = AuthService();
   bool _isLoading = true;
   String? _errorMessage;
@@ -70,8 +73,30 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _kpiPageController = PageController();
+    _startKpiTimer();
     _loadReadNotifications();
     _fetchData();
+  }
+
+  void _startKpiTimer() {
+    _kpiTimer?.cancel();
+    _kpiTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || _kpiPageController == null || !_kpiPageController!.hasClients) return;
+      final next = (_currentKpiIndex + 1) % 3;
+      _kpiPageController!.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 650),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _kpiTimer?.cancel();
+    _kpiPageController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadReadNotifications() async {
@@ -391,20 +416,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           _buildTopHeader(parent, activeChild, isDark),
           const SizedBox(height: 16),
           _buildChildSelectorBar(children, isDark),
-          const SizedBox(height: 20),
-          _buildHeroCard(activeChild),
-          const SizedBox(height: 22),
-          _buildKpiRow(activeChild, isDark),
-          const SizedBox(height: 26),
+          const SizedBox(height: 18),
+          _buildHeroWithKpiSection(activeChild, isDark),
+          const SizedBox(height: 24),
           _buildQuickActions(activeChild, isDark),
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
           _buildAnnouncementsSection(activeChild.announcements, isDark),
         ],
       ),
     );
   }
 
-  // =============================================================
   // TAB 1: ABSENCES & PRÉSENCES
   // =============================================================
   Widget _buildAbsencesTab(
@@ -1945,7 +1967,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.cloud_off, size: 36, color: Colors.red),
+          const Icon(Icons.cloud_off, size: 46, color: Colors.red),
           const SizedBox(height: 10),
           Text(
             msg,
@@ -2242,126 +2264,75 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   // =============================================================
 
   Widget _buildTopHeader(ParentInfo? parent, ChildData activeChild, bool isDark) {
-    final parentInitial = (parent?.name.isNotEmpty == true) ? parent!.name[0].toUpperCase() : 'M';
-    final parentName = (parent?.name.isNotEmpty == true) ? parent!.name : 'Mohammed Alami';
+    final parentFirstName = (parent?.name.isNotEmpty == true)
+        ? parent!.name.trim().split(' ').first
+        : 'Mohamed';
 
     final notifications = _getNotifications(activeChild);
     final unreadCount = notifications.where((n) => !_readNotificationIds.contains(n.id)).length;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFF134E35),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  parentInitial,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bienvenue,',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  parentName,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        // ── Greeting Title matching img2 ──
+        Text(
+          'Bonjour, ' + parentFirstName + ' !',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            letterSpacing: -0.4,
+          ),
         ),
+
+        // ── Action Buttons matching img2 (Frosted Bell & Frosted Logout) ──
         Row(
           children: [
-            // ── Modern Notification Bell Button with Badge ──
+            // Notification Bell Button
             Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => _openNotificationCenter(notifications, activeChild.details.nomComplet),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E2B22) : const Color(0xFFF1F8F5),
-                    borderRadius: BorderRadius.circular(14),
+                    color: isDark ? const Color(0xFF1E2B22) : const Color(0xFFEFF8F3),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? primaryGreen.withOpacity(0.3) : const Color(0xFFD1E7DD),
-                      width: 1,
+                      color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2EDE6),
+                      width: 1.0,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
                       Center(
                         child: Icon(
-                          Icons.notifications_outlined,
+                          Icons.notifications_none_rounded,
                           size: 22,
-                          color: isDark ? Colors.white : primaryGreen,
+                          color: isDark ? Colors.white : const Color(0xFF2D5A43),
                         ),
                       ),
                       if (unreadCount > 0)
                         Positioned(
-                          top: -2,
-                          right: -2,
+                          top: 10,
+                          right: 10,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF141914) : Colors.white,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFEF4444).withOpacity(0.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                unreadCount > 99 ? '99+' : unreadCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.1,
-                                ),
-                              ),
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ),
@@ -2370,28 +2341,38 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
 
-            // ── Logout Button ──
-            InkWell(
-              onTap: _logout,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A1E1E) : const Color(0xFFFFF0F0),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark ? Colors.red.withOpacity(0.2) : const Color(0xFFFFE4E6),
-                    width: 1,
+            // Logout Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _logout,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E2B22) : const Color(0xFFEFF8F3),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFE2EDE6),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.exit_to_app_rounded,
-                    size: 20,
-                    color: Color(0xFFEF5350),
+                  child: Center(
+                    child: Icon(
+                      Icons.logout_rounded,
+                      size: 21,
+                      color: isDark ? Colors.white : const Color(0xFF1E293B),
+                    ),
                   ),
                 ),
               ),
@@ -2723,259 +2704,296 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildChildSelectorBar(List<ChildData> children, bool isDark) {
     if (children.length <= 1) {
-      return const SizedBox.shrink(); // Hide the selector if only one child
+      return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Enfant sélectionné (${children.length}) :',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 52,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: children.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final child = children[index];
-              final isSelected = index == _selectedChildIndex;
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: children.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 22),
+        itemBuilder: (context, index) {
+          final child = children[index];
+          final isSelected = index == _selectedChildIndex;
 
-              return GestureDetector(
-                onTap: () {
-                  if (_selectedChildIndex != index) {
-                    setState(() => _selectedChildIndex = index);
-                    _fetchDocuments(children[index].details.idStudent);
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          final avatarAsset = (index % 2 == 0)
+              ? 'assets/images/child_avatar_boy1.jpg'
+              : 'assets/images/child_avatar_boy2.jpg';
+
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (_selectedChildIndex != index) {
+                setState(() => _selectedChildIndex = index);
+                _fetchDocuments(children[index].details.idStudent);
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── 3D Avatar with Active Emerald Halo/Border matching img2 ──
+                Container(
+                  width: 44,
+                  height: 44,
+                  padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
-                    color: isSelected ? primaryGreen : (isDark ? const Color(0xFF1E2B1E) : Colors.white),
-                    borderRadius: BorderRadius.circular(18),
+                    shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? primaryGreen : Colors.grey.shade300,
-                      width: isSelected ? 1.6 : 1.0,
+                      color: isSelected ? const Color(0xFF00A86B) : Colors.transparent,
+                      width: 2.2,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isSelected ? primaryGreen.withOpacity(0.2) : Colors.black.withOpacity(0.02),
-                        blurRadius: isSelected ? 10 : 4,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: isSelected ? Colors.white : primaryGreen.withOpacity(0.12),
-                        radius: 15,
+                  child: ClipOval(
+                    child: Image.asset(
+                      avatarAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => CircleAvatar(
+                        backgroundColor: primaryGreen.withOpacity(0.15),
                         child: Text(
                           child.details.prenom.isNotEmpty ? child.details.prenom[0].toUpperCase() : 'E',
                           style: TextStyle(
                             color: primaryGreen,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 16,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${child.details.prenom} ${child.details.nom}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isDark ? Colors.white : const Color(0xFF0F172A)),
-                            ),
-                          ),
-                          Text(
-                            child.details.classe,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isSelected ? Colors.white70 : Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+                const SizedBox(width: 10),
 
-  Widget _buildHeroCard(ChildData child) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: primaryGreen,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF19553D), Color(0xFF20664B)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withValues(alpha: 0.3),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Avatar
-          Container(
-            width: 50,
-            height: 50,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                child.details.prenom.isNotEmpty ? child.details.prenom[0].toUpperCase() : 'E',
-                style: const TextStyle(
-                  color: primaryGreen,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 22,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          
-          // Infos
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Line 1: Student Name + Status Badge
-                Row(
+                // ── Name & Class Label matching img2 ──
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${child.details.prenom} ${child.details.nom}',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      child.details.prenom + ' ' + child.details.nom,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Badge: Élève actif
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.8),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          const Text(
-                            'Élève actif',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                
-                // Line 2: Class tag + Matricule
-                Row(
-                  children: [
-                    if (child.details.classe.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.5),
-                        ),
-                        child: Text(
-                          child.details.classe,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Flexible(
-                      child: Text(
-                        'Matricule : ${child.details.matricule}',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      child.details.classe,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildKpiRow(ChildData child, bool isDark) {
+  // =============================================================
+  // HERO & KPI HYBRID SECTION (Matching img1 & img2 pixel-perfect)
+  // =============================================================
+  Widget _buildHeroWithKpiSection(ChildData child, bool isDark) {
+    final heroAvatar = (_selectedChildIndex % 2 == 0)
+        ? 'assets/images/child_avatar_boy1.jpg'
+        : 'assets/images/child_avatar_boy2.jpg';
+
+    final studentName = child.details.nomComplet.isNotEmpty
+        ? child.details.nomComplet
+        : 'Adam Alami';
+    final studentClass = child.details.classe.isNotEmpty
+        ? child.details.classe
+        : 'DEV202';
+    final matricule = child.details.matricule.isNotEmpty
+        ? child.details.matricule
+        : 'ST20260031';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        const totalHeight = 240.0;
+        const splitY = 64.0;
+        final splitX = (totalWidth * 0.49).clamp(160.0, 195.0);
+        const r = 24.0;
+
+        return SizedBox(
+          width: totalWidth,
+          height: totalHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Organic Green Shape with Cutout & Background Waves
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: HeroBackgroundPainter(
+                    splitX: splitX,
+                    splitY: splitY,
+                    radius: r,
+                  ),
+                ),
+              ),
+
+              // 2. Top-Right "Élève actif" Badge in the green tab
+              Positioned(
+                top: 14,
+                right: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4ADE80),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Élève actif',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Left Column: 3D Avatar, Student Name, Class Badge, Matricule
+              Positioned(
+                left: 0,
+                top: 0,
+                width: splitX,
+                height: totalHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 3D Avatar with halo ring
+                      Container(
+                        width: 74,
+                        height: 74,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.28),
+                            width: 2.2,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            heroAvatar,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              child: Center(
+                                child: Text(
+                                  studentName.isNotEmpty ? studentName[0].toUpperCase() : 'A',
+                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Student Name
+                      Text(
+                        studentName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Class Badge (pill)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          studentClass,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Matricule
+                      Text(
+                        'Matricule : $matricule',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 4. Right Column: The White Frosted KPI Card (img2: Moyenne, Absences, Scolarité)
+              Positioned(
+                left: splitX + 8,
+                top: splitY + 8,
+                right: 0,
+                bottom: 0,
+                child: _buildRightKpiCard(child, isDark),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // =============================================================
+  // RIGHT KPI CARD (Matching img2: Scolarité, Moyenne, Absences)
+  // =============================================================
+  Widget _buildRightKpiCard(ChildData child, bool isDark) {
     final isUpToDate = child.payments.totalRemaining <= 0;
 
     String getMention(double moyenne) {
@@ -2986,177 +3004,184 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       return 'Insuffisant';
     }
 
-    final List<Widget> slides = [
-      _buildNewKpiCard(
-        title: 'Moyenne',
-        value: '${child.grades.average.toStringAsFixed(1)}/20',
-        subtitle: 'Mention : ${getMention(child.grades.average)}',
-        badgeText: 'Favorable',
-        badgeColor: const Color(0xFF10B981),
-        icon: Icons.school,
-        iconBgColor: const Color(0xFFE8F3ED),
-        iconColor: primaryGreen,
-        isDark: isDark,
-      ),
-      _buildNewKpiCard(
-        title: 'Absences',
-        value: '${child.attendance.totalAbsences} séance(s)',
-        subtitle: 'Semestre en cours',
-        badgeText: child.attendance.totalAbsences > 0 ? 'Attention' : 'Excellent',
-        badgeColor: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-        icon: Icons.event_busy,
-        iconBgColor: child.attendance.totalAbsences > 0 ? const Color(0xFFFDE8E8) : const Color(0xFFE8F3ED),
-        iconColor: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-        isDark: isDark,
-      ),
-      _buildNewKpiCard(
+    final remainingFormatted = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: '',
+      decimalDigits: 0,
+    ).format(child.payments.totalRemaining).trim();
+
+    // 3 KPI Slides: Scolarité, Moyenne, Absences
+    final kpiSlides = [
+      // Slide 0: Scolarité (matching img2 exactly)
+      _KpiData(
         title: 'Scolarité',
-        value: isUpToDate ? 'À jour' : '${child.payments.totalRemaining.toStringAsFixed(0)} MAD',
-        subtitle: 'Frais de scolarité',
-        badgeText: isUpToDate ? 'Réglé' : 'Impayé',
-        badgeColor: isUpToDate ? const Color(0xFF10B981) : Colors.orange,
-        icon: Icons.credit_card,
-        iconBgColor: isUpToDate ? const Color(0xFFE8F3ED) : const Color(0xFFFEF3C7),
-        iconColor: isUpToDate ? primaryGreen : Colors.orange,
-        isDark: isDark,
+        badgeText: isUpToDate ? 'À jour' : 'Impayé',
+        badgeColor: isUpToDate ? const Color(0xFF10B981) : const Color(0xFFF97316),
+        mainValue: '$remainingFormatted MAD',
+        imageAsset: 'assets/images/icon_3d_piggybank.jpg',
+        onTap: () => setState(() => _currentNavIndex = 4),
+      ),
+      // Slide 1: Moyenne
+      _KpiData(
+        title: 'Moyenne',
+        badgeText: getMention(child.grades.average),
+        badgeColor: const Color(0xFF10B981),
+        mainValue: '${child.grades.average.toStringAsFixed(1)} / 20',
+        imageAsset: 'assets/images/icon_3d_trophy.jpg',
+        onTap: () => setState(() => _currentNavIndex = 2),
+      ),
+      // Slide 2: Absences
+      _KpiData(
+        title: 'Absences',
+        badgeText: child.attendance.totalAbsences > 0 ? 'Attention' : 'Parfait',
+        badgeColor: child.attendance.totalAbsences > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        mainValue: '${child.attendance.totalAbsences} séance${child.attendance.totalAbsences > 1 ? "s" : ""}',
+        imageAsset: 'assets/images/icon_3d_absence.jpg',
+        onTap: () => setState(() => _currentNavIndex = 1),
       ),
     ];
 
-    return Column(
-      children: [
-        CarouselSlider(
-          items: slides,
-          options: CarouselOptions(
-            height: 110,
-            viewportFraction: 1.0,
-            autoPlay: true,
-            autoPlayInterval: const Duration(seconds: 3),
-            onPageChanged: (index, reason) {
-              setState(() {
-                _currentKpiIndex = index;
-              });
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: slides.asMap().entries.map((entry) {
-            return Container(
-              width: _currentKpiIndex == entry.key ? 16.0 : 6.0,
-              height: 6.0,
-              margin: const EdgeInsets.symmetric(horizontal: 2.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3.0),
-                color: _currentKpiIndex == entry.key
-                    ? primaryGreen
-                    : (isDark ? Colors.white24 : Colors.grey.shade300),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNewKpiCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required String badgeText,
-    required Color badgeColor,
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required bool isDark,
-  }) {
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F2937) : Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isDark ? iconColor.withOpacity(0.2) : iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ],
+        border: Border.all(
+          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0).withValues(alpha: 0.7),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: PageView.builder(
+          controller: _kpiPageController,
+          itemCount: kpiSlides.length,
+          onPageChanged: (i) {
+            setState(() => _currentKpiIndex = i);
+            _startKpiTimer();
+          },
+          itemBuilder: (context, index) {
+            final item = kpiSlides[index];
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: item.onTap,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Header Row: Title + Pill Badge
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          item.title,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: item.badgeColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            item.badgeText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Main Big Value
                     Text(
-                      title,
+                      item.mainValue,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white70 : Colors.grey.shade600,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.4,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDark ? badgeColor.withOpacity(0.2) : badgeColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        badgeText,
-                        style: TextStyle(
-                          color: badgeColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+
+                    const Spacer(),
+
+                    // Bottom Row: Pagination Dots on left, 3D Illustration on right
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Dots
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: List.generate(
+                              kpiSlides.length,
+                              (dotIdx) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                margin: const EdgeInsets.only(right: 3),
+                                width: _currentKpiIndex == dotIdx ? 12 : 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: _currentKpiIndex == dotIdx
+                                      ? primaryGreen
+                                      : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+
+                        // 3D Illustration
+                        SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              item.imageAsset,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Icon(
+                                index == 0 ? Icons.savings_outlined : (index == 1 ? Icons.emoji_events_outlined : Icons.calendar_today_outlined),
+                                size: 46,
+                                color: item.badgeColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white54 : Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
+  // =============================================================
+  // ACCÈS RAPIDE (4 Frosted 3D Action Cards matching img1)
+  // =============================================================
   Widget _buildQuickActions(ChildData child, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3164,53 +3189,50 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         Text(
           'Accès Rapide',
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
             color: isDark ? Colors.white : const Color(0xFF0F172A),
+            letterSpacing: -0.3,
           ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildActionTile(
+              child: _build3DActionTile(
                 title: 'Absences',
-                subtitle: '${child.attendance.totalAbsences} séance(s)',
-                icon: Icons.event_busy_outlined,
-                color: const Color(0xFFEF4444),
+                subtitle: '${child.attendance.totalAbsences} séance${child.attendance.totalAbsences > 1 ? "s" : ""}',
+                assetImage: 'assets/images/icon_3d_absence.jpg',
                 onTap: () => setState(() => _currentNavIndex = 1),
                 isDark: isDark,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildActionTile(
+              child: _build3DActionTile(
                 title: 'Notes',
-                subtitle: '${child.grades.totalGrades} note(s)',
-                icon: Icons.school_outlined,
-                color: primaryGreen,
+                subtitle: '${child.grades.totalGrades} note${child.grades.totalGrades > 1 ? "s" : ""}',
+                assetImage: 'assets/images/icon_3d_notes.jpg',
                 onTap: () => setState(() => _currentNavIndex = 2),
                 isDark: isDark,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildActionTile(
+              child: _build3DActionTile(
                 title: 'Documents',
-                subtitle: 'Demandes & PDF',
-                icon: Icons.description_outlined,
-                color: const Color(0xFF6366F1),
+                subtitle: '',
+                assetImage: 'assets/images/icon_3d_documents.jpg',
                 onTap: () => setState(() => _currentNavIndex = 3),
                 isDark: isDark,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildActionTile(
+              child: _build3DActionTile(
                 title: 'Paiements',
-                subtitle: child.payments.overallStatus,
-                icon: Icons.credit_card_outlined,
-                color: const Color(0xFF10B981),
+                subtitle: '',
+                assetImage: 'assets/images/icon_3d_payments.jpg',
                 onTap: () => setState(() => _currentNavIndex = 4),
                 isDark: isDark,
               ),
@@ -3221,53 +3243,76 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
-  Widget _buildActionTile({
+  Widget _build3DActionTile({
     required String title,
     required String subtitle,
-    required IconData icon,
-    required Color color,
+    required String assetImage,
     required VoidCallback onTap,
     required bool isDark,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E2B1E) : Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
+          border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+            width: 1,
+          ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+            // 3D Icon Container
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  assetImage,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.widgets_outlined,
+                    size: 26,
+                    color: primaryGreen,
+                  ),
+                ),
               ),
-              child: Icon(icon, size: 20, color: color),
             ),
             const SizedBox(height: 8),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontWeight: FontWeight.bold,
                 fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white : const Color(0xFF0F172A),
+                letterSpacing: -0.2,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            if (subtitle.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -3525,7 +3570,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 36, color: color),
+            child: Icon(icon, size: 46, color: color),
           ),
           const SizedBox(height: 14),
           Text(
@@ -3555,4 +3600,112 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     if (avg >= 10.0) return 'Passable';
     return 'Ajourné';
   }
+}
+class _KpiData {
+  final String title;
+  final String badgeText;
+  final Color badgeColor;
+  final String mainValue;
+  final String imageAsset;
+  final VoidCallback onTap;
+
+  const _KpiData({
+    required this.title,
+    required this.badgeText,
+    required this.badgeColor,
+    required this.mainValue,
+    required this.imageAsset,
+    required this.onTap,
+  });
+}
+
+class HeroBackgroundPainter extends CustomPainter {
+  final double splitX;
+  final double splitY;
+  final double radius;
+
+  HeroBackgroundPainter({
+    required this.splitX,
+    required this.splitY,
+    this.radius = 24.0,
+  });
+
+  Path _getShapePath(Size size) {
+    final r = radius;
+    final w = size.width;
+    final h = size.height;
+    final sx = splitX;
+    final sy = splitY;
+
+    final path = Path();
+    path.moveTo(0, r);
+    path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
+    path.lineTo(w - r, 0);
+    path.arcToPoint(Offset(w, r), radius: Radius.circular(r));
+    path.lineTo(w, sy - r);
+    path.arcToPoint(Offset(w - r, sy), radius: Radius.circular(r));
+    path.lineTo(sx + r, sy);
+    path.arcToPoint(Offset(sx, sy + r), radius: Radius.circular(r), clockwise: false);
+    path.lineTo(sx, h - r);
+    path.arcToPoint(Offset(sx - r, h), radius: Radius.circular(r));
+    path.lineTo(r, h);
+    path.arcToPoint(Offset(0, h - r), radius: Radius.circular(r));
+    path.close();
+    return path;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _getShapePath(size);
+
+    // Subtle soft shadow under the organic green card
+    canvas.drawShadow(
+      path,
+      const Color(0xFF0F4D35).withValues(alpha: 0.35),
+      14.0,
+      true,
+    );
+
+    // Rich emerald gradient fill
+    final paint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF0F4732), Color(0xFF14563C), Color(0xFF1A6B4B)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(path, paint);
+
+    // Organic waves inside the clipped shape
+    canvas.save();
+    canvas.clipPath(path);
+
+    final wavePaint1 = Paint()
+      ..color = const Color(0xFF0A3324).withValues(alpha: 0.45)
+      ..style = PaintingStyle.fill;
+    final wave1 = Path()
+      ..moveTo(-20, 90)
+      ..cubicTo(size.width * 0.25, 40, size.width * 0.45, 140, size.width + 20, 80)
+      ..lineTo(size.width + 20, -20)
+      ..lineTo(-20, -20)
+      ..close();
+    canvas.drawPath(wave1, wavePaint1);
+
+    final wavePaint2 = Paint()
+      ..color = const Color(0xFF227E58).withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+    final wave2 = Path()
+      ..moveTo(-30, size.height + 20)
+      ..cubicTo(size.width * 0.15, size.height - 70, size.width * 0.35, size.height - 20, splitX + 20, size.height - 80)
+      ..lineTo(splitX + 20, size.height + 20)
+      ..close();
+    canvas.drawPath(wave2, wavePaint2);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant HeroBackgroundPainter oldDelegate) =>
+      oldDelegate.splitX != splitX ||
+      oldDelegate.splitY != splitY ||
+      oldDelegate.radius != radius;
 }

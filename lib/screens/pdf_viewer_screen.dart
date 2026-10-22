@@ -1,3 +1,4 @@
+import '../services/offline_media_service.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -37,35 +38,35 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       errorMessage = null;
     });
 
-    try {
-      // Download PDF to local storage
-      final fixedUrl = UrlFixer.fixUrl(widget.pdfUrl);
-      final response = await http.get(Uri.parse(fixedUrl));
-
-      if (response.statusCode == 200) {
-        final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/temp_course.pdf');
-        await file.writeAsBytes(response.bodyBytes);
-
+        try {
+      // 1. Check if already cached offline
+      final cached = await OfflineMediaService.getCachedFilePath(widget.pdfUrl);
+      if (cached != null) {
         if (mounted) {
           setState(() {
-            localPath = file.path;
+            localPath = cached;
             isLoading = false;
           });
         }
-      } else {
-        if (mounted) {
-          setState(() {
-            errorMessage =
-                'Impossible de télécharger le PDF (Code: ${response.statusCode})';
-            isLoading = false;
-          });
-        }
+        return;
+      }
+
+      // 2. Download and save persistently
+      final savedPath = await OfflineMediaService.downloadAndCacheFile(
+        widget.pdfUrl,
+        title: widget.pdfTitle,
+      );
+
+      if (mounted) {
+        setState(() {
+          localPath = savedPath;
+          isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          errorMessage = 'Erreur de téléchargement: $e';
+          errorMessage = 'Impossible de charger le document (Mode Hors-ligne sans cache): $e';
           isLoading = false;
         });
       }

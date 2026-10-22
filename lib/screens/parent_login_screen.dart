@@ -1,3 +1,5 @@
+import 'forgot_password_page.dart';
+import '../services/fcm_service.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -395,7 +397,30 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                                 ],
                               ),
 
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ForgotPasswordPage(
+                                          initialIdentifier: _emailController.text.trim(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Mot de passe oublié ?',
+                                    style: TextStyle(
+                                      color: Color(0xFF19553D),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+const SizedBox(height: 24),
 
                               // Submit Button
                               SizedBox(

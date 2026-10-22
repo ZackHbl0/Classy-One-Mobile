@@ -5,24 +5,32 @@ class AppConstants {
   // Private constructor to prevent instantiation
   AppConstants._();
 
-  /// Base URL for the Laravel API backend
-  /// Points to the Classy-One API server
-  /// Dynamically uses localhost for Web/Desktop and local IP for physical devices
-  static String get baseUrl {
-    if (kIsWeb) {
-      // Pour Google Chrome (Web) et Windows Desktop
-      return "http://127.0.0.1:8000/api";
-    }
-    // Pour le téléphone Android physique
-    return "http://192.168.100.99:8000/api";
+  /// URL pour connexion directe par câble USB via "adb reverse tcp:8000 tcp:8000"
+  static const String _usbUrl = "http://127.0.0.1:8000/api";
+
+  /// URL pour connexion sans fil via le réseau Wi-Fi local
+  static const String _wifiUrl = "http://192.168.100.99:8000/api";
+
+  /// URL active dynamique
+  static String _activeUrl = _usbUrl;
+
+  /// Base URL pour le backend Laravel Classy-One
+  static String get baseUrl => _activeUrl;
+
+  /// URL de secours automatique (si USB échoue, essayer Wi-Fi et vice-versa)
+  static String get fallbackUrl => _activeUrl == _usbUrl ? _wifiUrl : _usbUrl;
+
+  /// Basculer automatiquement vers l'URL qui répond
+  static void switchUrl() {
+    _activeUrl = fallbackUrl;
+    debugPrint('AppConstants: URL basculée automatiquement vers $_activeUrl');
   }
 
-  /// Alternative local development URL (commented out)
-  // static const String baseUrl = "http://classy-one.test/api";
+  static void setBaseUrl(String url) {
+    _activeUrl = url;
+  }
 
   /// Derives the Laravel public/storage base URL from the API baseUrl
-  /// Example: "http://192.168.100.99/Classy-One/public/api"
-  ///       -> "http://192.168.100.99/Classy-One/public/storage/"
   static String get storageUrl {
     final parts = baseUrl.split('/api');
     return '${parts[0]}/storage/';

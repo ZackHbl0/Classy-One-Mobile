@@ -560,7 +560,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                         child: Text(
                           title,
                           style: GoogleFonts.poppins(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: isDark
                                 ? Colors.white
@@ -603,7 +603,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 66.0),
+                          padding: const EdgeInsets.only(left: 4.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -650,7 +650,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     );
   }
 
-  Widget _buildHeroInfoRow(IconData icon, String text, bool isDark) {
+    Widget _buildHeroInfoRow(IconData icon, String text, bool isDark) {
     return Row(
       children: [
         Container(
@@ -668,12 +668,16 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: isDark ? Colors.white70 : AppColors.textSecondary,
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
+            ),
           ),
         ),
       ],

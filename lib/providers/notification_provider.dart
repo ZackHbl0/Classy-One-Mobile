@@ -18,6 +18,21 @@ class NotificationProvider with ChangeNotifier {
     return isRead != true && isRead != 1;
   }).length;
 
+    /// Silently refreshes notifications from server without toggling full-screen isLoading
+  Future<void> fetchNotificationsSilently(int idStudent) async {
+    if (idStudent == 0) return;
+    try {
+      final result = await _authService.getNotifications(idStudent);
+      if (result['success'] == true) {
+        _notifications = result['data'] ?? [];
+        _errorMessage = '';
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error silently refreshing notifications: $e');
+    }
+  }
+
   Future<void> fetchNotifications(int idStudent) async {
     if (idStudent == 0) return;
     

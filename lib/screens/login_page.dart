@@ -1,3 +1,5 @@
+import 'forgot_password_page.dart';
+import '../services/fcm_service.dart';
 import 'parent_login_screen.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -60,54 +62,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showForgotPasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            'Mot de passe oublié ?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF19553D),
-            ),
-          ),
-          content: const Text(
-            'Veuillez contacter l\'administration ou le support technique de l\'OSBT pour réinitialiser votre mot de passe.',
-            style: TextStyle(color: Colors.black87),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Fermer',
-                style: TextStyle(
-                  color: Color(0xFF19553D),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _launchURL(
-                  'https://api.whatsapp.com/send/?phone=%2B212661363127',
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF19553D),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Contacter Support'),
-            ),
-          ],
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordPage(
+          initialIdentifier: _matriculeController.text.trim(),
+        ),
+      ),
     );
   }
 

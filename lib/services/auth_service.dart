@@ -1,3 +1,5 @@
+import 'offline_cache_service.dart';
+import 'http_retry_helper.dart';
 import '../models/parent_dashboard_model.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -709,5 +711,120 @@ class AuthService {
     await prefs.remove('parent_name');
     await prefs.remove('parent_email');
     await prefs.remove('parent_phone');
+  }
+
+  // -------------------------------------------------------------
+  // PASSWORD RECOVERY / RESET WORKFLOW
+  // -------------------------------------------------------------
+
+  Future<Map<String, dynamic>> forgotPassword(String identifier) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/forgot-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'identifier': identifier}),
+      );
+
+      final data = jsonDecode(response.body);
+      return data is Map<String, dynamic>
+          ? data
+          : {'success': response.statusCode == 200, 'message': response.body};
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyResetCode(String identifier, String code) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/verify-reset-code'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'identifier': identifier,
+          'code': code,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      return data is Map<String, dynamic>
+          ? data
+          : {'success': response.statusCode == 200, 'message': response.body};
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String identifier,
+    required String resetToken,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'identifier': identifier,
+          'reset_token': resetToken,
+          'password': password,
+          'password_confirmation': confirmPassword,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      return data is Map<String, dynamic>
+          ? data
+          : {'success': response.statusCode == 200, 'message': response.body};
+    } catch (e) {
+      return {'success': false, 'message': 'Erreur de connexion: $e'};
+    }
+  }
+
+  // -------------------------------------------------------------
+  // COURSES WITH OFFLINE CACHE
+  // -------------------------------------------------------------
+
+  Future<Map<String, dynamic>> getCourses() async {
+    const cacheKey = 'courses_list_cache';
+    try {
+      final res = await HttpRetryHelper.retry(() async {
+        final headers = await _getHeaders();
+        final response = await http.post(
+          Uri.parse('$baseUrl/courses'),
+          headers: headers,
+          body: jsonEncode({}),
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {
+            await OfflineCacheService.setCache(cacheKey, data);
+          }
+          return data as Map<String, dynamic>;
+        }
+        throw Exception('Status code: ${response.statusCode}');
+      });
+      return res;
+    } catch (e) {
+      final cached = await OfflineCacheService.getCache(cacheKey);
+      if (cached != null) {
+        final timeStr = await OfflineCacheService.getFormattedCacheTime(cacheKey);
+        return {
+          ...cached,
+          'fromCache': true,
+          'cacheNotice': 'Mode Hors-ligne: Cours sauvegardés $timeStr',
+        };
+      }
+      return {'success': false, 'message': 'Impossible de charger les cours. Aucune donnée en cache.'};
+    }
   }
 }
