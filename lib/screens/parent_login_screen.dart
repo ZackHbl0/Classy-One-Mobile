@@ -15,7 +15,7 @@ class ParentLoginScreen extends StatefulWidget {
 
 class _ParentLoginScreenState extends State<ParentLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _matriculeController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
@@ -30,14 +30,14 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
 
   Future<void> _loadSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('remembered_parent_email') ?? '';
+    final savedMatricule = prefs.getString('remembered_parent_matricule') ?? prefs.getString('remembered_parent_email') ?? '';
     final savedPassword = prefs.getString('remembered_parent_password') ?? '';
     final rememberMe = prefs.getBool('remember_parent_me') ?? false;
 
     if (rememberMe) {
       setState(() {
         _rememberMe = true;
-        _emailController.text = savedEmail;
+        _matriculeController.text = savedMatricule;
         _passwordController.text = savedPassword;
       });
     }
@@ -49,10 +49,10 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
         _isLoading = true;
       });
 
-      final email = _emailController.text.trim();
+      final matricule = _matriculeController.text.trim().toUpperCase();
       final password = _passwordController.text;
 
-      final result = await _authService.parentLogin(email, password);
+      final result = await _authService.parentLogin(matricule, password);
 
       setState(() {
         _isLoading = false;
@@ -63,10 +63,11 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
       if (result['success'] == true) {
         final prefs = await SharedPreferences.getInstance();
         if (_rememberMe) {
-          await prefs.setString('remembered_parent_email', email);
+          await prefs.setString('remembered_parent_matricule', matricule);
           await prefs.setString('remembered_parent_password', password);
           await prefs.setBool('remember_parent_me', true);
         } else {
+          await prefs.remove('remembered_parent_matricule');
           await prefs.remove('remembered_parent_email');
           await prefs.remove('remembered_parent_password');
           await prefs.setBool('remember_parent_me', false);
@@ -99,7 +100,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _matriculeController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -260,7 +261,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                               ),
                               const SizedBox(height: 6),
                               const Text(
-                                'Entrez votre e-mail ou téléphone pour accéder au dossier de vos enfants.',
+                                'Entrez votre matricule pour accéder au dossier de vos enfants.',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF64748B),
@@ -272,7 +273,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
 
                               // Email or Phone input
                               const Text(
-                                'E-mail ou Téléphone',
+                                'Matricule',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -281,12 +282,14 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               TextFormField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
+                                controller: _matriculeController,
+                                textCapitalization: TextCapitalization.characters,
+                                keyboardType: TextInputType.text,
+                                
                                 decoration: InputDecoration(
-                                  hintText: 'exemple@domaine.com ou 06...',
+                                  hintText: 'Ex: PR20260001',
                                   hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                  prefixIcon: const Icon(Icons.person_outline, color: primaryGreen),
+                                  prefixIcon: const Icon(Icons.badge_outlined, color: primaryGreen),
                                   filled: true,
                                   fillColor: const Color(0xFFF8FAFC),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -305,7 +308,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                                 ),
                                 validator: (val) {
                                   if (val == null || val.trim().isEmpty) {
-                                    return 'Veuillez saisir votre e-mail ou téléphone';
+                                    return 'Veuillez saisir votre matricule';
                                   }
                                   return null;
                                 },
@@ -405,7 +408,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => ForgotPasswordPage(
-                                          initialIdentifier: _emailController.text.trim(),
+                                          initialIdentifier: _matriculeController.text.trim(),
                                         ),
                                       ),
                                     );

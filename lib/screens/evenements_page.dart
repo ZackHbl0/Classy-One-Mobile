@@ -25,6 +25,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Tout', 'icon': Icons.check},
+    {'name': "Aujourd'hui", 'icon': Icons.today_rounded},
     {'name': 'Académique', 'icon': Icons.school_outlined},
     {'name': 'Sports', 'icon': Icons.sports_soccer_outlined},
     {'name': 'Clubs', 'icon': Icons.groups_outlined},
@@ -34,6 +35,49 @@ class _EvenementsPageState extends State<EvenementsPage> {
   void initState() {
     super.initState();
     _fetchEvenements();
+  }
+
+  bool _isSameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    final localA = a.toLocal();
+    final localB = b.toLocal();
+    return localA.year == localB.year &&
+        localA.month == localB.month &&
+        localA.day == localB.day;
+  }
+
+  void _sortEvents(List<EventModel> events) {
+    final now = DateTime.now();
+    events.sort((a, b) {
+      final aDate = a.dateEvent;
+      final bDate = b.dateEvent;
+
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+
+      final aIsToday = _isSameDay(aDate, now);
+      final bIsToday = _isSameDay(bDate, now);
+
+      if (aIsToday && !bIsToday) return -1;
+      if (!aIsToday && bIsToday) return 1;
+
+      if (aIsToday && bIsToday) {
+        return aDate.compareTo(bDate);
+      }
+
+      final aIsFuture = aDate.isAfter(now);
+      final bIsFuture = bDate.isAfter(now);
+
+      if (aIsFuture && !bIsFuture) return -1;
+      if (!aIsFuture && bIsFuture) return 1;
+
+      if (aIsFuture && bIsFuture) {
+        return aDate.compareTo(bDate);
+      }
+
+      return bDate.compareTo(aDate);
+    });
   }
 
   Future<void> _fetchEvenements() async {
@@ -56,9 +100,7 @@ class _EvenementsPageState extends State<EvenementsPage> {
         if (result['success'] == true) {
           final List<dynamic> data = result['data'] ?? [];
           _allEvents = data.map((e) => EventModel.fromJson(e)).toList();
-          for (var e in _allEvents) {
-            print('DEBUG_CAT: "${e.title}" -> "${e.category}"');
-          }
+          _sortEvents(_allEvents);
           _filterEvents(_selectedCategory); // apply initial filter
         } else {
           _errorMessage = result['message'] ?? 'Erreur lors du chargement';
@@ -68,18 +110,29 @@ class _EvenementsPageState extends State<EvenementsPage> {
   }
 
   String _normalizeCategory(String cat) {
-    return cat.toLowerCase()
-        .replaceAll('é', 'e')
-        .replaceAll('è', 'e')
-        .replaceAll('ê', 'e')
+    var s = cat.toLowerCase()
+        .replaceAll(RegExp(r'[éèêë]'), 'e')
+        .replaceAll(RegExp(r'[àâ]'), 'a')
+        .replaceAll(RegExp(r'[ùû]'), 'u')
+        .replaceAll(RegExp(r'[îï]'), 'i')
         .trim();
+    if (s.endsWith('s')) {
+      s = s.substring(0, s.length - 1);
+    }
+    return s;
   }
 
   void _filterEvents(String category) {
     setState(() {
       _selectedCategory = category;
+      final now = DateTime.now();
+
       if (category == 'Tout') {
-        _filteredEvents = _allEvents;
+        _filteredEvents = List.from(_allEvents);
+      } else if (category == "Aujourd'hui" || category == "Aujourdhui") {
+        _filteredEvents = _allEvents
+            .where((e) => _isSameDay(e.dateEvent, now))
+            .toList();
       } else {
         final normSelected = _normalizeCategory(category);
         _filteredEvents = _allEvents
@@ -490,22 +543,14 @@ class _EvenementsPageState extends State<EvenementsPage> {
       return _buildEmptyState();
     }
 
-    // Split events randomly or by date if possible, but here we just split list for demonstration
-    // Since API returns events without strict "Today" classification in the current logic,
-    // we simulate the groups for UI fidelity.
-    final List<EventModel> todayEvents = _filteredEvents.take(1).toList();
-    final List<EventModel> weekEvents = _filteredEvents.skip(1).toList();
+    final now = DateTime.now();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (todayEvents.isNotEmpty) ...[
-          ...todayEvents.map((e) => _buildSleekEventCard(e, isToday: true)),
-        ],
-        if (weekEvents.isNotEmpty) ...[
-          ...weekEvents.map((e) => _buildSleekEventCard(e)),
-        ],
-      ],
+      children: _filteredEvents.map((e) {
+        final isToday = _isSameDay(e.dateEvent, now);
+        return _buildSleekEventCard(e, isToday: isToday);
+      }).toList(),
     );
   }
 
@@ -521,36 +566,44 @@ class _EvenementsPageState extends State<EvenementsPage> {
         : '';
     final timeStr = '09:00 - 11:00'; // Placeholder time
 
-    // Style logic based on index or category
-    // We simulate variations since category data might not match perfectly
+    // Style logic based on category
     Color iconBgColor = const Color(0xFFEEF2FF); // Blueish
     Color iconColor = const Color(0xFF4F46E5);
     Color tagBgColor = const Color(0xFFEEF2FF);
     Color tagColor = const Color(0xFF4F46E5);
-    IconData cardIcon = Icons.code_rounded;
+    IconData cardIcon = Icons.school_rounded;
     String tagText = event.category;
+
+    final catLower = event.category.toLowerCase();
+    if (catLower.contains('sport')) {
+      iconBgColor = const Color(0xFFF3E8FF);
+      iconColor = const Color(0xFF9333EA);
+      tagBgColor = const Color(0xFFF3E8FF);
+      tagColor = const Color(0xFF9333EA);
+      cardIcon = Icons.sports_soccer_rounded;
+      tagText = 'Sports';
+    } else if (catLower.contains('club')) {
+      iconBgColor = const Color(0xFFFFEDD5);
+      iconColor = const Color(0xFFEA580C);
+      tagBgColor = const Color(0xFFFFEDD5);
+      tagColor = const Color(0xFFEA580C);
+      cardIcon = Icons.groups_rounded;
+      tagText = 'Clubs';
+    } else {
+      iconBgColor = const Color(0xFFEEF2FF);
+      iconColor = const Color(0xFF4F46E5);
+      tagBgColor = const Color(0xFFEEF2FF);
+      tagColor = const Color(0xFF4F46E5);
+      cardIcon = Icons.school_rounded;
+      tagText = 'Académique';
+    }
 
     if (isToday) {
       iconBgColor = const Color(0xFFDCFCE7);
       iconColor = const Color(0xFF10B981);
       tagBgColor = const Color(0xFFDCFCE7);
       tagColor = const Color(0xFF10B981);
-      cardIcon = Icons.school_rounded;
       tagText = "Aujourd'hui";
-    } else if (event.category.toLowerCase().contains('sport')) {
-      iconBgColor = const Color(0xFFF3E8FF);
-      iconColor = const Color(0xFF9333EA);
-      tagBgColor = const Color(0xFFF3E8FF);
-      tagColor = const Color(0xFF9333EA);
-      cardIcon = Icons.sports_soccer_rounded;
-    } else if (event.category.toLowerCase().contains('club')) {
-      iconBgColor = const Color(0xFFFFEDD5);
-      iconColor = const Color(0xFFEA580C);
-      tagBgColor = const Color(0xFFFFEDD5);
-      tagColor = const Color(0xFFEA580C);
-      cardIcon = Icons.groups_rounded;
-    } else {
-      cardIcon = Icons.school_rounded;
     }
 
     if (isDark) {
@@ -842,7 +895,9 @@ class _EvenementsPageState extends State<EvenementsPage> {
           Text(
             _selectedCategory == 'Tout'
                 ? 'Aucun événement prévu pour le moment.'
-                : 'Aucun événement disponible dans la catégorie "$_selectedCategory".',
+                : (_selectedCategory == "Aujourd'hui" || _selectedCategory == "Aujourdhui"
+                    ? "Aucun événement prévu pour aujourd'hui."
+                    : 'Aucun événement disponible dans la catégorie "$_selectedCategory".'),
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               color: const Color(0xFF64748B),

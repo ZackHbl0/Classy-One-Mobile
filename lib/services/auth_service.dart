@@ -193,7 +193,12 @@ class AuthService {
       await prefs.remove('parent_read_notifs_' + email);
     }
     await prefs.remove('parent_read_notifs_default');
-        await prefs.remove('auth_token');
+    await prefs.remove('auth_token');
+    await prefs.remove('user_role');
+    await prefs.remove('matricule');
+
+    // Security & Data Privacy: strictly purge all offline caches upon logout
+    await OfflineCacheService.clearAll();
   }
 
   Future<Map<String, dynamic>> getDashboardData(int idStudent) async {
@@ -553,7 +558,7 @@ class AuthService {
   // -------------------------------------------------------------
 
   Future<Map<String, dynamic>> parentLogin(
-    String email,
+    String matricule,
     String password, {
     String fcmToken = '',
   }) async {
@@ -574,7 +579,8 @@ class AuthService {
           'Accept': 'application/json',
         },
         body: jsonEncode({
-          'email': email,
+          'matricule': matricule,
+          'email': matricule,
           'password': password,
           if (fcmToken.isNotEmpty) 'fcmToken': fcmToken,
         }),
@@ -593,8 +599,9 @@ class AuthService {
           await prefs.setString('user_role', 'parent');
         }
         if (data['parent'] != null) {
+          await prefs.setString('parent_matricule', data['parent']['matricule'] ?? matricule);
           await prefs.setString('parent_name', data['parent']['name'] ?? '');
-          await prefs.setString('parent_email', data['parent']['email'] ?? '');
+          await prefs.setString('parent_email', data['parent']['matricule'] ?? data['parent']['email'] ?? matricule);
           await prefs.setString('parent_phone', data['parent']['phone'] ?? '');
         }
         return {'success': true, 'data': data};
@@ -711,6 +718,9 @@ class AuthService {
     await prefs.remove('parent_name');
     await prefs.remove('parent_email');
     await prefs.remove('parent_phone');
+
+    // Security & Data Privacy: strictly purge all offline caches upon logout
+    await OfflineCacheService.clearAll();
   }
 
   // -------------------------------------------------------------
